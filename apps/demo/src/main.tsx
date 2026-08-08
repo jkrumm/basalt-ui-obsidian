@@ -5,6 +5,7 @@ import '@mantine/core/styles.layer.css'
 import '@mantine/spotlight/styles.layer.css'
 import 'basalt-ui/styles.css'
 import './styles/safe-area.css'
+import './styles/mobile-density.css'
 
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'

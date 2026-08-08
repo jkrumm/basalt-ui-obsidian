@@ -73,6 +73,46 @@ describe('NoteView', () => {
   })
 })
 
+describe('NoteView — mobile meta-header suppression', () => {
+  test('omits the duplicated title below the sm breakpoint but keeps the description', async () => {
+    const originalMatchMedia = window.matchMedia
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: true,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia
+
+    try {
+      const { container } = render(
+        <MantineProvider>
+          <VaultProvider index={makeIndex([NOTE])}>
+            <NoteView note={NOTE} />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      // The shell's own fixed header already names the note on mobile, so the meta TITLE must not
+      // render a second time.
+      expect(container.querySelectorAll('h1')).toHaveLength(0)
+      expect(screen.queryByText('Example Note')).toBeNull()
+      // ...but the description is NOT duplicated anywhere, and it is the note's own one-line
+      // summary — the most useful line on the page for someone arriving from search. Dropping the
+      // whole meta block took it with the title; it has to survive.
+      expect(screen.getByText('A short description.')).toBeDefined()
+      // The body itself is untouched — only the meta header is suppressed.
+      expect(await screen.findByText('Some body text.')).toBeDefined()
+    } finally {
+      window.matchMedia = originalMatchMedia
+    }
+  })
+})
+
 describe('NoteView — duplicate leading heading', () => {
   test('suppresses a body H1 that duplicates the note title', async () => {
     const note: VaultNote = {

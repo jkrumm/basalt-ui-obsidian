@@ -1,0 +1,84 @@
+/**
+ * Mobile information density — this app is an iPhone-first reader, and several basalt-ui defaults
+ * are desktop-tuned literals or a fixed two-row header that this repo doesn't own the source of
+ * (vendored `basalt-ui`/`@mantine/core`, not `packages/basalt-ui-obsidian`). Every rule below is a
+ * scoped, mobile-only override of a CSS custom property basalt-ui/Mantine already expose for exactly
+ * this — never a new selector reaching into their internals — under `(max-width: 47.99375em)`,
+ * Mantine's own exact complement of its `min-width: 48em` `sm` breakpoint (the same value
+ * `basalt-ui/content/prose.module.css`'s own responsive rule uses, verified against the installed
+ * `@mantine/core`'s `MantineClasses.mjs` — see that file's comment for the derivation). Reusing the
+ * EXACT boundary, not a rounder `48em`/`767px` approximation, matters here specifically because it
+ * must land on the identical viewport width `BasaltShell`'s own `header={{ height: { base, sm } }}`
+ * switches at — a mismatched boundary would leave a band where the two disagree.
+ *
+ * `!important` throughout is load-bearing, not a shortcut: every property here is a `--vx-*`/
+ * `--app-shell-*` custom property `BasaltProvider`/`BasaltShell` themselves set on the SAME `:root`
+ * selector via a `<style>` tag they render inside `<body>` (`basalt-ui`'s `BasaltBridge`, `Mantine`'s
+ * `AppShellMediaStyles`) — which, being further down the document than this file's own `<link
+ * rel="stylesheet">` in `<head>`, would otherwise WIN the cascade on source order alone despite
+ * identical specificity. `!important` is the standard, sanctioned way to override a framework's own
+ * runtime-injected `:root` variables from consumer CSS; nothing here fights specificity.
+ */
+@media (max-width: 47.99375em) {
+  /*
+   * `BasaltShell`'s mobile header height (`appShellHeaderMobileHeight`, `basalt-ui/tokens/palette.ts`)
+   * is a flat 97px sized for a two-row wrap layout (breadcrumb row + a 52px page-actions row) that
+   * assumes row 1 is populated — on this app's note route it never is (no `sections` item is ever
+   * "active" there, so `AppBreadcrumbs` renders nothing), and the 97px reservation doesn't shrink to
+   * match. There is no per-app override of that AppShell prop — `createBasaltTheme`'s only spacing
+   * knob is `{ density }`, a single global level that would ALSO shrink the desktop header (out of
+   * scope: "without touching the desktop layout") — so this overrides the Mantine AppShell variables
+   * it resolves into instead, the supported customization surface Mantine ships for exactly this.
+   *
+   * 68px, not the lower end of a "52-56px" eyeball target: the real mobile-header floor here is
+   * structural, not cosmetic. `app-header.module.css`'s mobile layout ALWAYS reserves two flex lines
+   * (`.lead`+`.global` on line 1, `.pageActions` forced onto line 2 by `flex-basis: 100%`) with a
+   * `gap: var(--mantine-spacing-sm)` (13px) between them, applied whenever two lines exist — even
+   * when line 1's content is empty (as it is here), its own height collapses to 0 but the row-gap
+   * between the two lines does not. The floor is therefore `0 (empty row 1) + 13 (wrap gap) + 52`
+   * (`.pageActions`' own fixed height, holding the back button + note title `PageActions` renders,
+   * `apps/demo/src/routes/$.tsx`) `= 65px`; going lower clips that row against the header's own
+   * background box. 68px keeps a 3px margin.
+   *
+   * Both variables together — not `-height` alone — because `AppShellMain`'s `padding-top` reads
+   * `--app-shell-header-offset` (`calc(var(--app-shell-header-offset) + var(--app-shell-padding))`,
+   * `@mantine/core/styles/AppShell.css`), not `-height` directly; overriding only one leaves the
+   * header box visually shorter while the page content underneath still clears the OLD 97px. This is
+   * also what keeps the fix DERIVED rather than a second independent constant to drift out of sync:
+   * `apps/demo/src/routes/__root.tsx`'s sticky note-tree aside (`top: var(--app-shell-header-height,
+   * 0px)`) and every other consumer of these two variables all move with the same override.
+   */
+  :root {
+    --app-shell-header-height: 68px !important;
+    --app-shell-header-offset: 68px !important;
+  }
+
+  /*
+   * Prose/Callout/table block rhythm (`basalt-ui/content/{prose,callout}.module.css`) is entirely
+   * `--vx-space-*` token driven — the SAME derivation `createBasaltTheme(overrides, { density })`
+   * itself uses (`deriveSpacing`'s law: `Math.round(value * (1 + 0.1 * level))`, floored at 1). That
+   * global knob isn't usable here for the same reason the header height one isn't (it retunes desktop
+   * too), so this applies its OWN level-(-2) multiplier (0.8×) by hand, mobile-only, to just the
+   * tokens this sweep actually measured as oversized at 393px: article block rhythm (paragraph gap,
+   * heading margins, the gap between stacked blocks — callouts/tables/code fences all share
+   * `space-prose-article-block-gap`), Callout's own inset/title-row gap, and table cell padding.
+   * Values are `basalt-ui`'s own -2-level numbers, not invented ones — see `deriveSpacing`'s doc
+   * (`basalt-ui/tokens/palette.ts`) for the law being mirrored. Table/heading FONT SIZE is
+   * deliberately untouched — shrinking reading type on the smaller screen would trade information
+   * density for legibility, the opposite of this sweep's intent.
+   */
+  :root {
+    --vx-space-prose-article-paragraph-gap: 11px !important;
+    --vx-space-prose-article-heading-gap-top: 24px !important;
+    --vx-space-prose-article-heading-gap-bottom: 8px !important;
+    --vx-space-prose-article-h1-gap-top: 5px !important;
+    --vx-space-prose-article-h1-gap-bottom: 11px !important;
+    --vx-space-prose-article-h2-rule-gap: 5px !important;
+    --vx-space-prose-article-block-gap: 14px !important;
+    --vx-space-callout-inset-y: 8px !important;
+    --vx-space-callout-inset-x: 11px !important;
+    --vx-space-callout-title-row-gap: 6px !important;
+    --vx-space-prose-table-cell-inset-y: 4px !important;
+    --vx-space-prose-table-cell-inset-x: 6px !important;
+  }
+}

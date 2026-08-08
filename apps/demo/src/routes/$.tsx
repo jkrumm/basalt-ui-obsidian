@@ -5,7 +5,8 @@
  */
 import { useEffect } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ActionIcon, Group, Stack, Text } from '@mantine/core'
+import { ActionIcon, Group, Stack, Text, useMantineTheme } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import { EmptyState, PageActions } from 'basalt-ui'
 import { Backlinks, NoteView, useVault } from 'basalt-ui-obsidian'
 import type { VaultNote } from 'obsidian-vault-core'
@@ -47,12 +48,11 @@ const GERMAN_MIN_HITS = 5
 function detectLang(note: VaultNote): 'de' | 'en' {
   // Code is stripped first: fenced blocks and inline spans carry identifiers, URLs and config keys
   // that match the stopword pattern without being prose in any language.
-  const text = `${note.title} ${note.body}`
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
+  const text = `${note.title} ${note.body}`.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`]*`/g, ' ')
   const words = text.split(/\s+/).filter(Boolean).length
   if (words === 0) return DEFAULT_LANG
-  const hits = (text.match(/[äöüßÄÖÜ]/g)?.length ?? 0) + (text.match(GERMAN_STOPWORD_RE)?.length ?? 0)
+  const hits =
+    (text.match(/[äöüßÄÖÜ]/g)?.length ?? 0) + (text.match(GERMAN_STOPWORD_RE)?.length ?? 0)
   return hits >= GERMAN_MIN_HITS && hits / words >= GERMAN_MIN_RATIO ? 'de' : 'en'
 }
 
@@ -63,6 +63,17 @@ function NotePage() {
   const { _splat: slug } = Route.useParams()
   const { index } = useVault()
   const note = slug !== undefined ? index.bySlug.get(slug) : undefined
+  // `Stack.gap` (unlike AppShell's own `header.height`) has no responsive-object form at the type
+  // level — it's a bespoke component prop wired straight to a `--stack-gap` inline style, not one of
+  // `Box`'s generic `StyleProp<T>` style props (`p`/`m`/`w`/`h`/…, see `@mantine/core`'s
+  // `MantineStyleProps`). A JS breakpoint check is the plain, type-safe alternative — same pattern
+  // `NoteView`'s own mobile meta-header suppression already uses (`packages/basalt-ui-obsidian/src/
+  // render/note-view.tsx`); `max-width`, not `min-width`, so the test harness's constant
+  // `matchMedia` stub (`matches: false`) resolves to "not mobile" and keeps today's desktop value.
+  const theme = useMantineTheme()
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`, undefined, {
+    getInitialValueInEffect: false,
+  })
 
   // `document.title`/`lang` are global DOM state, not React-owned — set them imperatively on
   // mount/note-change and restore the app default on unmount (leaving the note route, e.g. back to
@@ -83,9 +94,17 @@ function NotePage() {
   }
 
   return (
-    <Stack gap="xl">
+    // `xl` (26px) is a desktop-tuned gap — same measure between the header row/article and the
+    // article/backlinks section on a 393px phone, where every px of vertical space is scarcer.
+    // `lg` (20px) below `sm` keeps both gaps present (they still separate distinct regions) without
+    // the desktop's extra breathing room; desktop is untouched.
+    <Stack gap={isMobile ? 'lg' : 'xl'}>
+      {/* Mobile only, both parts. The back affordance has no desktop counterpart (the tree is
+          always visible there), and on desktop `ArticleLayout`'s meta header still renders the
+          title — so leaving this row visible reintroduced the same duplicate title in reverse,
+          once top-right in the header and once as the article heading. */}
       <PageActions>
-        <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+        <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ minWidth: 0 }}>
           <ActionIcon
             component={Link}
             to="/"
