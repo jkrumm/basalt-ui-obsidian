@@ -1,16 +1,17 @@
 /**
  * `useObsidianMarkdown` — the props basalt-ui's `<Markdown>` needs to render one note's body:
  * the three Obsidian remark plugins (`obsidian-vault-core/remark`) wired to this note's own
- * `path`, the `blockquote`/`a`/`img` overrides that read what those plugins wrote, and the
- * `sanitizeSchema` extension that keeps `Markdown`'s trailing `rehype-sanitize` pass from
- * stripping their attributes back off.
+ * `path`, the `blockquote`/`a`/`img`/`td`/`th`/`li`/`input` overrides that read what those plugins
+ * (or, for the plain GFM shapes, react-markdown itself) wrote, the `dataview`/`dataviewjs` fence
+ * renderer, and the `sanitizeSchema` extension that keeps `Markdown`'s trailing `rehype-sanitize`
+ * pass from stripping any of their attributes back off.
  *
  * Every returned value is `useMemo`'d on the inputs that can change it: `remarkPlugins` and the `a`
  * override on `[resolveWikilink, path]`/`[renderLink]`, `components` on the link override,
- * `sanitizeSchema` is a module-level constant. `<Markdown>` feeds `components`/`remarkPlugins`
- * straight into `React.memo`-gated streaming block renderers (see the module JSDoc + the
- * `fenceRenderers` prop doc in basalt's `markdown.tsx`), so an inline object/array literal here
- * would defeat that memoization on every parent render.
+ * `sanitizeSchema`/`fenceRenderers` are module-level constants. `<Markdown>` feeds
+ * `components`/`remarkPlugins` straight into `React.memo`-gated streaming block renderers (see the
+ * module JSDoc + the `fenceRenderers` prop doc in basalt's `markdown.tsx`), so an inline
+ * object/array literal here would defeat that memoization on every parent render.
  */
 import { useMemo } from 'react'
 import {
@@ -23,8 +24,13 @@ import type { MarkdownComponents, MarkdownProps } from 'basalt-ui/content'
 import { useVault } from '../context.js'
 import {
   createObsidianLinkComponent,
+  OBSIDIAN_FENCE_RENDERERS,
   ObsidianBlockquote,
   ObsidianImage,
+  ObsidianListItem,
+  ObsidianTableCell,
+  ObsidianTableHeaderCell,
+  ObsidianTaskCheckbox,
 } from './obsidian-components.js'
 import { OBSIDIAN_SANITIZE_SCHEMA } from './sanitize-schema.js'
 
@@ -36,7 +42,7 @@ export type ObsidianMarkdownConfig = {
 /** The subset of `MarkdownProps` this hook produces — spread straight into `<Markdown {...x}>`. */
 export type ObsidianMarkdownProps = Pick<
   MarkdownProps,
-  'remarkPlugins' | 'components' | 'sanitizeSchema'
+  'remarkPlugins' | 'components' | 'sanitizeSchema' | 'fenceRenderers'
 >
 
 export function useObsidianMarkdown({ path }: ObsidianMarkdownConfig): ObsidianMarkdownProps {
@@ -67,6 +73,10 @@ export function useObsidianMarkdown({ path }: ObsidianMarkdownConfig): ObsidianM
       blockquote: ObsidianBlockquote,
       a: linkComponent,
       img: ObsidianImage,
+      td: ObsidianTableCell,
+      th: ObsidianTableHeaderCell,
+      li: ObsidianListItem,
+      input: ObsidianTaskCheckbox,
     }),
     [linkComponent],
   )
@@ -75,5 +85,6 @@ export function useObsidianMarkdown({ path }: ObsidianMarkdownConfig): ObsidianM
     remarkPlugins,
     components,
     sanitizeSchema: OBSIDIAN_SANITIZE_SCHEMA,
+    fenceRenderers: OBSIDIAN_FENCE_RENDERERS,
   }
 }

@@ -170,4 +170,56 @@ describe('VaultNav', () => {
     renderNav({ storageKey: 'nav-persist' })
     expect(screen.getByText('Gaming')).toBeDefined()
   })
+
+  test('a note row never carries an underline, regardless of the consumer renderLink', () => {
+    renderNav({ activePath: 'Areas/Reading.md', storageKey: 'nav-underline' })
+
+    // `VaultNav` owns its own row appearance — the label's own inline style is what guarantees
+    // this regardless of what the (here, default `<a>`) `renderLink` brings.
+    const label = screen.getByText('Reading')
+    expect(label.style.textDecoration).toBe('none')
+  })
+
+  test('the active row carries a data-active marker; an inactive row does not', () => {
+    renderNav({ activePath: 'Areas/Reading.md', storageKey: 'nav-active-marker' })
+
+    const activeRow = screen.getByText('Reading').closest('[data-active]')
+    expect(activeRow?.getAttribute('data-active')).toBe('true')
+
+    const inactiveRow = screen.getByText('Inbox').closest('[data-active]')
+    expect(inactiveRow).toBeNull()
+  })
+
+  test('clicking a note row invokes onNavigate — the demo shell wires this to close its mobile drawer', () => {
+    const index = buildIndex(NOTES)
+    const onNavigate = () => {
+      calls += 1
+    }
+    let calls = 0
+    render(
+      <MantineProvider>
+        <VaultProvider index={index}>
+          <VaultNav storageKey="nav-onnavigate" onNavigate={onNavigate} />
+        </VaultProvider>
+      </MantineProvider>,
+    )
+
+    fireEvent.click(screen.getByText('Inbox'))
+    expect(calls).toBe(1)
+  })
+
+  test('toggling a folder chevron does not invoke onNavigate', () => {
+    const index = buildIndex(NOTES)
+    let calls = 0
+    render(
+      <MantineProvider>
+        <VaultProvider index={index}>
+          <VaultNav storageKey="nav-onnavigate-chevron" onNavigate={() => (calls += 1)} />
+        </VaultProvider>
+      </MantineProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand Areas' }))
+    expect(calls).toBe(0)
+  })
 })

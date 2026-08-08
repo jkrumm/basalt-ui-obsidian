@@ -91,6 +91,121 @@ describe('useObsidianMarkdown', () => {
   })
 })
 
+describe('useObsidianMarkdown — table cells and inline icons', () => {
+  test('table cells get normal word-boundary wrapping, not the prose default', async () => {
+    const table = '| Second | Boots |\n| --- | --- |\n| a | b |\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={table} />
+      </Wrapper>,
+    )
+
+    const cell = await within(container).findByText('Second')
+    expect(cell.style.overflowWrap).toBe('normal')
+    expect(cell.style.wordBreak).toBe('normal')
+  })
+
+  test('an icon-sized image (<=64px width hint) sits inline on the text baseline', async () => {
+    const markdown = 'before ![\\|32](https://img.example.com/icon.png) after\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    const img = await within(container).findByRole('presentation')
+    expect(img.style.verticalAlign).toBe('middle')
+    expect(img.style.display).not.toBe('block')
+  })
+
+  test('an unsized image renders as a block, not an inline icon', async () => {
+    const markdown = '![a standalone screenshot](https://img.example.com/full.png)\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    const img = container.querySelector('img')
+    expect(img?.style.display).toBe('block')
+    expect(img?.style.verticalAlign).toBe('')
+  })
+})
+
+describe('useObsidianMarkdown — folded callout', () => {
+  test('a fold marker renders a collapsible <details>, closed by default, with a single title', async () => {
+    const markdown = '> [!warning]- Careful here\n> body text\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    await screen.findByText('Careful here')
+    expect(container.querySelector('details')?.open).toBe(false)
+    expect(within(container).getAllByText('Careful here')).toHaveLength(1)
+  })
+
+  test('`[!type]+` starts open', async () => {
+    const markdown = '> [!tip]+ Always open\n> body text\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    await screen.findByText('Always open')
+    expect(container.querySelector('details')?.open).toBe(true)
+  })
+
+  test('no fold marker stays a plain, non-collapsible callout', async () => {
+    const markdown = '> [!info] Plain callout\n> body text\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    await screen.findByText('Plain callout')
+    expect(container.querySelector('details')).toBeNull()
+  })
+})
+
+describe('useObsidianMarkdown — dataview fence', () => {
+  test('renders a labelled, inert block instead of a raw code block with a copy button', async () => {
+    const markdown = '```dataview\nTABLE file.mtime FROM "Projects"\n```\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    expect(await screen.findByText('Dataview query (not evaluated)')).toBeDefined()
+    expect(container.textContent).toContain('TABLE file.mtime FROM "Projects"')
+    expect(container.querySelector('pre code')).toBeNull()
+    expect(within(container).queryByRole('button')).toBeNull()
+  })
+})
+
+describe('useObsidianMarkdown — task list', () => {
+  test('checkboxes render as non-interactive glyphs, not native inputs', async () => {
+    const markdown = '- [x] Done thing\n- [ ] Pending thing\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    expect(await within(container).findByRole('img', { name: 'checked' })).toBeDefined()
+    expect(within(container).getByRole('img', { name: 'unchecked' })).toBeDefined()
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull()
+
+    for (const item of container.querySelectorAll('li')) {
+      expect((item as HTMLElement).style.listStyleType).toBe('none')
+    }
+  })
+})
+
 describe('useObsidianMarkdown — referential stability', () => {
   test('remarkPlugins/components/sanitizeSchema stay referentially stable across an unrelated re-render', () => {
     const { result, rerender } = renderHook(() => useObsidianMarkdown({ path: 'index.md' }), {

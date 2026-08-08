@@ -1,0 +1,39 @@
+# brain-web — the Obsidian vault reader, always-on on the Mac mini. This is a
+# STATIC SITE ONLY: the vault is baked into apps/demo/dist at BUILD time
+# (`make build`), and this container just serves that directory over nginx —
+# it doesn't know or care that the content changes underneath it.
+#
+# The dist/ bind mount below (NOT an image COPY) is what makes a content
+# refresh a plain `make refresh` instead of an image rebuild: the vault
+# changes every few minutes (brain-sync's 300s LaunchAgent pulls into
+# ~/SourceRoot/brain) while this app's code changes rarely, and baking the
+# vault into the image would mean rebuilding the image on every content pull.
+#
+# No custom Dockerfile: `nginx:alpine` as shipped already does everything
+# this needs — root nginx.conf includes conf.d/*.conf inside its http block,
+# so the bind-mounted server block below is the entire configuration.
+#
+# Run via `make up`; never raw `docker compose` (see docker-makefile rule).
+services:
+  brain-web:
+    image: nginx:alpine
+    container_name: brain-web
+    restart: unless-stopped
+    # Blast-radius cap, in the spirit of prometheus-scripts/analysis's
+    # dashboard-ui (256m) — a static nginx serving a prebuilt bundle runs at a
+    # fraction of that in steady state. This is a ceiling, not a sizing target.
+    mem_limit: 256m
+    ports:
+      # Loopback only — Caddy's reverse_proxy is the only thing that should
+      # reach this (dotfiles/config/Caddyfile `brain.test` / the
+      # brain.mini.jkrumm.com tailnet door). Docker's default "7733:7733" form
+      # publishes to 0.0.0.0, which would put an unauthenticated vault reader
+      # (private health data, no auth layer by design) on the LAN.
+      - '127.0.0.1:7733:7733'
+    volumes:
+      # Read-only bind mounts. apps/demo/dist is `make build`'s output —
+      # nginx reads files off disk per request rather than holding them in
+      # memory, so a fresh `make refresh` (or `make up`) takes effect on the
+      # very next request with no container restart needed.
+      - ./apps/demo/dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

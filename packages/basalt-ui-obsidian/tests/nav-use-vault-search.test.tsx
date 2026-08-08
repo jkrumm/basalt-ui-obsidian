@@ -16,7 +16,7 @@ import type { VaultIndex, VaultNote } from 'obsidian-vault-core'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { VaultProvider } from '../src/context.js'
-import { toVaultSearchActions, useVaultSearch } from '../src/nav/use-vault-search.js'
+import { folderPath, toVaultSearchActions, useVaultSearch } from '../src/nav/use-vault-search.js'
 import type { VaultSearchHit } from '../src/nav/use-vault-search.js'
 
 function note(path: string, title: string, body = ''): VaultNote {
@@ -100,6 +100,62 @@ describe('useVaultSearch', () => {
     expect(result.current.hits[0]?.path).toBe('wiki/health/peptides/index.md')
   })
 
+  test('drops results far below the top score (relevance cutoff)', async () => {
+    // A short, term-dense field scores far higher under BM25 than the same term diluted across a
+    // long one — measured ~1.60 vs ~0.22 for this shape, well under the 0.25 cutoff fraction.
+    const filler = Array.from({ length: 60 }, (_, i) => `word${i}`).join(' ')
+    const notes = [
+      note('a.md', 'Zenith', 'zenith zenith zenith zenith zenith'),
+      note('b.md', 'Filler One', `${filler} zenith ${filler}`),
+    ]
+    const index = buildIndex(notes)
+    const { result } = renderHook(() => useVaultSearch({ debounceMs: 0 }), {
+      wrapper: wrapper(index),
+    })
+
+    act(() => result.current.setQuery('zenith'))
+
+    await waitFor(() => expect(result.current.hits.length).toBeGreaterThan(0))
+    expect(result.current.hits.map((hit) => hit.title)).toEqual(['Zenith'])
+  })
+
+  test('a diacritic-folded query finds a note only reachable by its accented text', async () => {
+    const notes = [
+      note('de.md', 'Ernährungsplan', 'Ernährung im Alltag: viel Gemüse und wenig Zucker.'),
+    ]
+    const index = buildIndex(notes)
+    const { result } = renderHook(() => useVaultSearch({ debounceMs: 0 }), {
+      wrapper: wrapper(index),
+    })
+
+    act(() => result.current.setQuery('Ernahrung'))
+
+    await waitFor(() => expect(result.current.hits.length).toBeGreaterThan(0))
+    expect(result.current.hits[0]?.title).toBe('Ernährungsplan')
+  })
+
+  test('a snippet has raw markdown stripped and its own title dropped', async () => {
+    const notes = [
+      note(
+        'callout.md',
+        'Dr. Mundo',
+        '# Dr. Mundo\n\n> [!tip] The jungle version is fine\n> It works well.',
+      ),
+    ]
+    const index = buildIndex(notes)
+    const { result } = renderHook(() => useVaultSearch({ debounceMs: 0 }), {
+      wrapper: wrapper(index),
+    })
+
+    act(() => result.current.setQuery('jungle'))
+
+    await waitFor(() => expect(result.current.hits.length).toBeGreaterThan(0))
+    const snippet = result.current.hits[0]?.snippet
+    expect(snippet).not.toContain('[!tip]')
+    expect(snippet).not.toContain('#')
+    expect(snippet).not.toMatch(/^Dr\. Mundo/)
+  })
+
   test('an empty query returns no hits', () => {
     const index = buildIndex(NOTES)
     const { result } = renderHook(() => useVaultSearch({ debounceMs: 0 }), {
@@ -171,5 +227,15 @@ describe('useVaultSearch', () => {
     expect(actions[0]).not.toHaveProperty('description')
     expect(actions[0]).not.toHaveProperty('group')
     expect(actions[0]?.id).toBe('vault:/a')
+  })
+})
+
+describe('folderPath', () => {
+  test('returns the vault-relative folder of a nested note', () => {
+    expect(folderPath('wiki/health/peptides/index.md')).toBe('wiki/health/peptides')
+  })
+
+  test('returns an empty string for a root-level note', () => {
+    expect(folderPath('Health.md')).toBe('')
   })
 })

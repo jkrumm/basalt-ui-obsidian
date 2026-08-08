@@ -2,6 +2,7 @@
 import MiniSearch from 'minisearch'
 import type { Options as MiniSearchOptions } from 'minisearch'
 
+import { foldDiacritics } from './fold-diacritics.js'
 import { stripMarkdownToText } from './strip-markdown.js'
 import type { VaultIndex, VaultNote } from '../types.js'
 
@@ -15,10 +16,21 @@ export type SearchDocument = {
   readonly text: string
 }
 
+/** Downcases and diacritic-folds every indexed/queried term, so `Ernahrung` — typed without a
+ * long-pressed `a` — matches `Ernährung`. Shared by both `buildSearchIndex` (index build) and
+ * `loadSearchIndex` (browser search, via the same `SEARCH_OPTIONS` object below) — MiniSearch does
+ * not persist function options in its serialized JSON, so passing the same object to both is what
+ * keeps the index and the query from folding differently. */
+function foldTerm(term: string): string | false {
+  const folded = foldDiacritics(term.toLowerCase())
+  return folded === '' ? false : folded
+}
+
 const SEARCH_OPTIONS: MiniSearchOptions<SearchDocument> = {
   idField: 'id',
   fields: ['title', 'description', 'tags', 'text'],
   storeFields: ['path', 'slug', 'title'],
+  processTerm: foldTerm,
 }
 
 function toSearchDocument(note: VaultNote): SearchDocument {

@@ -17,7 +17,7 @@
     }
   },
   "scripts": {
-    "build": "tsup && tsc --emitDeclarationOnly --declarationMap",
+    "build": "tsup && tsc --emitDeclarationOnly --declarationMap && bun scripts/copy-assets.mjs",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },

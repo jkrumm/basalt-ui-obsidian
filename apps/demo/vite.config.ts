@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react'
 import { basaltAppPlugin, basaltViteConfig } from 'basalt-ui/vite'
 import { fileURLToPath } from 'node:url'
 import { mergeConfig } from 'vite'
+import { imageRuntimeCaching } from './vite-plugins/image-runtime-cache'
+import { iosStatusBarFix } from './vite-plugins/ios-status-bar'
 import { vaultData } from './vite-plugins/vault-data'
 
 // Alias the two workspace packages to their `src/`, same mechanism as the basalt-ui playground's
@@ -19,7 +21,7 @@ const basaltObsidianSrc = fileURLToPath(
 
 export default mergeConfig(
   basaltViteConfig({
-    port: 7732,
+    port: 7733,
     version: '0.0.0',
     allowedHosts: ['brain.test', 'brain.mini.jkrumm.com'],
   }),
@@ -54,18 +56,25 @@ export default mergeConfig(
             // source markdown becomes a few MB of JSON. Workbox's 2 MiB default rejects that file
             // from the precache outright, so raise the ceiling well past the vault's current size.
             maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-            // No `runtimeCaching` rules are added on top of this. That is the point, not an
-            // oversight: only files matched by `globPatterns` above ever enter the precache
-            // manifest, and a precache-only Workbox setup never caches anything at runtime beyond
-            // it. There is no auth today (this deploys tailnet-only) — but a cached login redirect
-            // or a cached 401 is the classic way a PWA shell bricks itself, and the only way that
-            // happens is an explicit `runtimeCaching` rule. Keeping this config precache-only, with
-            // `/api` and `/auth` denylisted from the navigation fallback too, is what keeps that
-            // failure mode structurally impossible rather than just "not currently triggered".
+            // One runtime-caching rule, scoped narrowly to the image CDN — see
+            // `vite-plugins/image-runtime-cache.ts` for why precache alone (globPatterns above)
+            // can't reach these (they're runtime <img> fetches against a separate origin, not build
+            // output) and why CacheFirst is safe for them (content-addressed transform URLs). There
+            // is no auth today (this deploys tailnet-only), but the rule stays deliberately narrow:
+            // a cached login redirect or a cached 5xx is the classic way a PWA shell bricks itself,
+            // and `cacheableResponse: { statuses: [0, 200] }` inside `imageRuntimeCaching` is what
+            // keeps a non-200 (opaque failures aside, which report as 0 either way) from ever
+            // entering this cache. `/api` and `/auth` stay denylisted from the navigation fallback
+            // below regardless — this rule's `urlPattern` can't match either path, since it only
+            // matches the CDN origin.
+            runtimeCaching: [imageRuntimeCaching()],
             navigateFallbackDenylist: [/^\/api/, /^\/auth/],
           },
         },
       }),
+      // Runs after basaltAppPlugin regardless of array position (order: 'post') — see
+      // vite-plugins/ios-status-bar.ts for why this can't instead be a basaltAppPlugin option.
+      iosStatusBarFix(),
     ],
   },
 )

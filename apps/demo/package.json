@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "npx kill-port 7732 && vite --strictPort --port 7732",
+    "dev": "npx kill-port 7733 && vite --strictPort --port 7733",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
@@ -13,17 +13,21 @@
     "@mantine/core": "^9.3.0",
     "@mantine/hooks": "^9.3.0",
     "@mantine/spotlight": "^9.3.0",
+    "@shikijs/langs": "4.3.1",
+    "@shikijs/themes": "4.3.1",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "1.170.16",
     "basalt-ui": "1.13.0",
     "basalt-ui-obsidian": "workspace:*",
+    "beautiful-mermaid": "1.1.3",
     "motion": "12.42.0",
     "obsidian-vault-core": "workspace:*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
     "rehype-sanitize": "^6.0.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "shiki": "4.3.1"
   },
   "devDependencies": {
     "@fontsource-variable/hubot-sans": "5.2.8",

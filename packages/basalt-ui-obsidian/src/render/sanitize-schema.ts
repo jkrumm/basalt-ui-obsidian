@@ -3,11 +3,16 @@
  * hast attributes `useObsidianMarkdown`'s remark plugins and component overrides depend on:
  * `data-callout` / `data-callout-kind` / `data-callout-title` / `data-callout-fold` (blockquote,
  * from `remarkObsidianCallout`'s `hProperties` mirror), `data-wikilink` (a, from
- * `remarkObsidianWikilink`), and `width` / `height` (img, from `remarkObsidianImageSize`).
+ * `remarkObsidianWikilink`), `width` / `height` (img, from `remarkObsidianImageSize`), and
+ * `checked` (input — `mdast-util-to-hast`'s OWN GFM task-list-item handling, not one of this
+ * package's remark plugins; see `ObsidianTaskCheckbox` in `obsidian-components.tsx`).
  *
  * `Markdown` runs its `rehype-sanitize` pass LAST, unconditionally — without this extension every
- * one of these attributes is stripped before the `blockquote`/`a`/`img` overrides below ever see
- * them.
+ * one of these attributes is stripped before the `blockquote`/`a`/`img`/`input` overrides below
+ * ever see them. `checked` is the one NOT redundant with `rehype-sanitize`'s own `defaultSchema`:
+ * that schema already allow-lists `input`'s `disabled`/`type` (GFM task lists are a long-standing
+ * exception it carves out — see the installed package's own `lib/schema.js` comment), but NOT
+ * `checked`, so every task-list checkbox reads as unchecked post-sanitize without this addition.
  *
  * The `data-*` keys are the DASHED attribute spelling, verified against hast-util-sanitize 5.0.2:
  * `mdast-util-to-hast` copies `hProperties` onto `node.properties` verbatim, and the camelCase
@@ -27,5 +32,6 @@ export const OBSIDIAN_SANITIZE_SCHEMA: SanitizeSchemaExtension = {
     blockquote: ['data-callout', 'data-callout-kind', 'data-callout-title', 'data-callout-fold'],
     a: ['data-wikilink'],
     img: ['width', 'height'],
+    input: ['checked'],
   },
 }

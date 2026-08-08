@@ -16,7 +16,13 @@
     "import/consistent-type-specifier-style": "error",
     "import/no-unassigned-import": "off"
   },
-  "ignorePatterns": ["dist", "node_modules", "**/tests/fixtures/**", "**/tsup.config.ts"],
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "**/tests/fixtures/**",
+    "**/tsup.config.ts",
+    "**/*.module.css.d.ts"
+  ],
   "overrides": [
     {
       "files": ["**/tests/**"],

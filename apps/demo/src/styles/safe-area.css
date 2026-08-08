@@ -18,3 +18,129 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
 }
+
+/*
+ * Same env() approach as `body` above, reused where the mobile note-tree drawer (`routes/__root.tsx`)
+ * meets a physical screen edge. The `body` rule above only reaches NORMAL-FLOW descendants — a
+ * `position: fixed` element (which Mantine's `Drawer` is, like `BasaltShell`'s own fixed
+ * header/navbar) positions relative to the viewport and ignores an ancestor's padding entirely, so
+ * a left-edge overlay drawer needs its own insets rather than inheriting `body`'s.
+ */
+.vault-nav-drawer-body {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+ * `BasaltShell`'s own fixed chrome (header, navbar, footer) lays out against the viewport, not
+ * `body` — an ancestor's padding (the `body` rule above) never reaches a `position: fixed`
+ * descendant, so each needs its own inset. Additive on top of the shell's existing fixed
+ * header/footer heights (same "never collapse on a 0 inset" contract as `body` above).
+ */
+header.mantine-AppShell-header,
+nav.mantine-AppShell-navbar {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+footer.mantine-AppShell-footer {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+ * Mobile bottom action bar (routes/__root.tsx) — two direct actions (note tree, search) replacing
+ * `BasaltShell`'s own built-in mobile nav, whose "Vault" tab opened a sheet with just the Home
+ * link and whose "More" tab duplicated it via the full navbar overlay. Occupies the same 52px
+ * footer slot `BasaltShell` already reserves (`footer={{ height: { base: 52, sm: 0 } }}`), so
+ * `AppShell.Main`'s own bottom padding needs no change.
+ */
+.mobile-shell-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--mantine-z-index-app, 100);
+  display: flex;
+  height: 52px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: var(--mantine-color-body);
+  border-top: 1px solid var(--mantine-color-default-border);
+}
+
+.mobile-shell-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--mantine-color-dimmed);
+}
+
+.mobile-shell-tab-label {
+  font-size: var(--vx-text-micro, 10.5px);
+  line-height: 1;
+  font-weight: 500;
+}
+
+/* The vendored bar this replaces (see `.mobile-shell-tabbar` above) — its "Vault"/"More" tabs
+ * never reached the actual note tree, so it's fully superseded rather than shown alongside it. */
+.mantine-AppShell-footer nav {
+  display: none;
+}
+
+/*
+ * WCAG 2.5.5/2.5.8 target-size floor for touch input, scoped to the shell chrome this repo owns
+ * (header/navbar/mobile-tab-bar controls, e.g. the sidebar's 28x28 mobile "Close navigation"
+ * button and the 32px-tall search trigger) rather than every `<button>` site-wide: a blanket rule
+ * would also expand the hit area of note-tree/TOC rows rendered by `basalt-ui-obsidian` (out of
+ * this fix's ownership), and those sit close enough together that overlapping invisible hit areas
+ * would misroute taps between adjacent rows — a worse regression than the violation itself. The
+ * expansion is an invisible, centered hit area (not a visual resize), so the control's own size is
+ * unchanged everywhere it applies.
+ */
+@media (pointer: coarse) {
+  header button,
+  header a,
+  nav.mantine-AppShell-navbar button,
+  nav.mantine-AppShell-navbar a,
+  .mobile-shell-tabbar button,
+  [aria-label='Close navigation'],
+  [aria-label='Open search'] {
+    position: relative;
+  }
+
+  header button::after,
+  header a::after,
+  nav.mantine-AppShell-navbar button::after,
+  nav.mantine-AppShell-navbar a::after,
+  .mobile-shell-tabbar button::after,
+  [aria-label='Close navigation']::after,
+  [aria-label='Open search']::after {
+    content: '';
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+  }
+
+  /* The `⌘K`/`Ctrl K` shortcut hint has no keyboard on a touch device. */
+  kbd {
+    display: none;
+  }
+}
+
+/*
+ * Chrome's default focus outline (`rgb(0, 95, 204)`) is 2.46:1 against the app's dark panel
+ * background — below the 3:1 WCAG 2.4.11/1.4.11 floor. Mantine's own interactive components already
+ * clear this (they carry `.mantine-focus-auto`, styled via `--mantine-primary-color-filled` in
+ * `@mantine/core/styles/global.css`); only bare `<a>` (tree links, TOC links, body wikilinks) falls
+ * through to the browser default, so give it the identical ring rather than a new color.
+ */
+a:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+}

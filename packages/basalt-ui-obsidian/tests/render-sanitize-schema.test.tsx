@@ -65,6 +65,33 @@ describe('OBSIDIAN_SANITIZE_SCHEMA', () => {
     expect(out.properties['data-not-allowed']).toBeUndefined()
   })
 
+  test('allow-lists checked on input, additively over the default schema', () => {
+    const merged = mergeSanitizeSchema(BASE, OBSIDIAN_SANITIZE_SCHEMA)
+    expect(merged.attributes?.['input']).toContain('checked')
+  })
+
+  // `rehype-sanitize`'s own `defaultSchema` already allow-lists `input`'s `disabled`/`type` (the
+  // GFM task-list carve-out), but NOT `checked` — every checkbox reads as unchecked post-sanitize
+  // without this addition, regardless of what the source markdown said.
+  test('the real sanitizer keeps a task-list checkbox checked', () => {
+    const schema = mergeSanitizeSchema(
+      defaultSchema as SanitizeSchemaInput,
+      OBSIDIAN_SANITIZE_SCHEMA,
+    )
+    const node: Element = {
+      type: 'element',
+      tagName: 'input',
+      properties: { type: 'checkbox', disabled: true, checked: true },
+      children: [],
+    }
+
+    const out = sanitize(node, schema as never) as Element
+
+    expect(out.properties['checked']).toBe(true)
+    expect(out.properties['disabled']).toBe(true)
+    expect(out.properties['type']).toBe('checkbox')
+  })
+
   test('does not become a blanket allow — an attribute the extension never named stays absent', () => {
     const merged = mergeSanitizeSchema(BASE, OBSIDIAN_SANITIZE_SCHEMA)
     const blockquoteNames = (merged.attributes?.['blockquote'] ?? []).map((entry) =>

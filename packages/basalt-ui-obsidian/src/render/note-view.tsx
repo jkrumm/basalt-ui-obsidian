@@ -3,11 +3,28 @@
  * TOC on by default) wrapping `<Markdown>` fed by `useObsidianMarkdown`. Pure composition — no new
  * visual vocabulary, everything visual stays basalt-ui's.
  */
+import type { CSSProperties } from 'react'
 import { ArticleLayout, Markdown } from 'basalt-ui/content'
 import type { ArticleLayoutMeta } from 'basalt-ui/content'
 import type { VaultNote } from 'obsidian-vault-core'
 
 import { useObsidianMarkdown } from './use-obsidian-markdown.js'
+
+/** Widens `--vx-text-md`'s param position, purely so the object literal below type-checks — csstype
+ * has no generic `--${string}` index signature on `CSSProperties`, only its named properties. */
+type CustomCSSProperties = Record<`--${string}`, string>
+
+/**
+ * Narrows basalt's 72ch default measure (`ArticleLayout`/`Prose` both key off this ONE token —
+ * `article-layout.module.css`'s grid column AND `prose.module.css`'s own max-width). Canvas-measured
+ * on three vault paragraphs at 16px/27.2px: 72ch actually renders 82–86 characters per line (`ch`
+ * tracks the `0` glyph's advance width, not the font's real average character width), well past the
+ * 60–75ch comfortable range. 68ch brings it back into range and — since the grid column shrinks with
+ * it — frees the horizontal room the layout otherwise wasted.
+ */
+const PROSE_MEASURE_STYLE: CSSProperties & CustomCSSProperties = {
+  '--vx-prose-measure': '68ch',
+}
 
 export type NoteViewProps = {
   readonly note: VaultNote
@@ -37,16 +54,49 @@ function noteMeta(note: VaultNote): ArticleLayoutMeta {
   }
 }
 
+/** A leading Markdown inline image (`![alt](src)`), matched so it can be stripped from a heading's
+ * text before comparing it to the note title — some notes prefix the H1 with an inline icon. */
+const LEADING_IMAGE_RE = /^!\[[^\]]*\]\([^)]*\)\s*/
+
+/** A body's leading ATX H1 line (`# …`), captured up to (excluding) its trailing newline. Only
+ * matches at the very start of the string — a later `#`-heading mid-document is untouched, and
+ * `## ` (or deeper) never matches since the space is required immediately after the single `#`. */
+const LEADING_H1_RE = /^# +([^\n]*)\n?/
+
+/** Trim, collapse internal whitespace, and lowercase — the same normalization on both sides of the
+ * title comparison, so trivial formatting differences (extra spaces, case) don't defeat the match. */
+function normalizeHeadingText(raw: string): string {
+  return raw.replace(LEADING_IMAGE_RE, '').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * `ArticleLayout` already renders `note.title` once, in its own meta header — when the body's own
+ * first line is an identical H1 (optionally led by an inline icon image), Markdown would render it
+ * a second time. Strips exactly that leading heading line (plus one following blank line) when its
+ * normalized text matches the note title; otherwise returns `body` untouched, including when the
+ * body opens with a DIFFERENT heading (H1 or otherwise) that isn't a duplicate.
+ */
+function stripDuplicateLeadingHeading(body: string, title: string): string {
+  const withoutLeadingBlankLines = body.replace(/^\s*\n+/, '')
+  const match = LEADING_H1_RE.exec(withoutLeadingBlankLines)
+  if (match === null) return body
+  const headingText = normalizeHeadingText(match[1] ?? '')
+  if (headingText !== normalizeHeadingText(title)) return body
+  return withoutLeadingBlankLines.slice(match[0].length).replace(/^\s*\n+/, '')
+}
+
 export function NoteView({ note, toc, readingProgress }: NoteViewProps) {
   const markdownProps = useObsidianMarkdown({ path: note.path })
+  const body = stripDuplicateLeadingHeading(note.body, note.title)
 
   return (
     <ArticleLayout
       meta={noteMeta(note)}
+      style={PROSE_MEASURE_STYLE}
       {...(toc !== undefined && { toc })}
       {...(readingProgress !== undefined && { readingProgress })}
     >
-      <Markdown {...markdownProps}>{note.body}</Markdown>
+      <Markdown {...markdownProps}>{body}</Markdown>
     </ArticleLayout>
   )
 }

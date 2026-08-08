@@ -15,42 +15,33 @@
  * optional peer of `basalt-ui`, not a dependency of this package either, so `VaultSpotlightAction`
  * is a structural mirror of `SpotlightActionData` rather than an import of it — any object of this
  * shape is assignable into a `SpotlightActionData[]` array at the call site.
+ *
+ * Snippet building (`buildSnippet`) lives in `obsidian-vault-core/search`, not here — it used to be
+ * a second, weaker duplicate of that package's markdown-to-text flattening, which is exactly why
+ * snippets leaked raw callout/table syntax the index itself had already learned to strip. One
+ * implementation now backs both.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { buildSearchIndex } from 'obsidian-vault-core/search'
-import type { VaultNote } from 'obsidian-vault-core'
+import { buildSearchIndex, buildSnippet } from 'obsidian-vault-core/search'
 import { useVault } from '../context.js'
 
 type VaultMiniSearch = ReturnType<typeof buildSearchIndex>
 
-const SNIPPET_LENGTH = 140
-const SNIPPET_LEAD = 40
+/** Results below this fraction of the top hit's score are dropped before `limit` is applied — a
+ * fixed threshold doesn't generalize across queries with very different absolute score ranges, but
+ * "how close to the best match" does. Measured against the real 105-note vault: a broad single-word
+ * term like "health" or "note" carries a long, fast-decaying tail of barely-relevant hits (46 and 43
+ * total) that this trims to a handful, while a specific multi-word query like "wild rift" keeps its
+ * whole, evenly-scored topic cluster. */
+const RELEVANCE_CUTOFF_FRACTION = 0.25
 
-/** Minimal markdown → plain-text reduction, just enough for a readable search snippet. */
-function toPlainText(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]*)]\([^)]*\)/g, '$1')
-    .replace(/\[\[([^\]|#]*)(\|[^\]]*)?]]/g, (_match, target: string, alias?: string) =>
-      alias !== undefined ? alias.slice(1) : target,
-    )
-    .replace(/[#>*_`~-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/** A short excerpt of `note.body` around the first hit on `query`, or its start when there's none. */
-function snippetFrom(note: VaultNote, query: string): string | undefined {
-  const text = toPlainText(note.body)
-  if (text === '') return undefined
-
-  const term = query.trim().split(/\s+/)[0]
-  const matchAt =
-    term !== undefined && term !== '' ? text.toLowerCase().indexOf(term.toLowerCase()) : -1
-  const start = matchAt === -1 ? 0 : Math.max(0, matchAt - SNIPPET_LEAD)
-  const excerpt = text.slice(start, start + SNIPPET_LENGTH).trim()
-  return start > 0 ? `…${excerpt}` : excerpt
+/** The vault-relative folder a hit's note lives in, e.g. `wiki/health/peptides` for
+ * `wiki/health/peptides/index.md` — the muted secondary line under a result title, since two notes
+ * sharing a title (a curated `Health` page and its `wiki/` counterpart) are otherwise
+ * indistinguishable in a flat results list. A root-level note has no folder. */
+export function folderPath(path: string): string {
+  const slashIndex = path.lastIndexOf('/')
+  return slashIndex === -1 ? '' : path.slice(0, slashIndex)
 }
 
 export type UseVaultSearchOptions = {
@@ -97,24 +88,28 @@ export function useVaultSearch(options: UseVaultSearchOptions = {}): UseVaultSea
     const trimmed = debouncedQuery.trim()
     if (trimmed === '') return []
 
-    return miniSearch
-      .search(trimmed)
-      .slice(0, limit)
-      .map((result): VaultSearchHit => {
-        const path = String(result['path'])
-        const slug = String(result['slug'])
-        const title = String(result['title'])
-        const note = index.byPath.get(path)
-        const snippet = note === undefined ? undefined : snippetFrom(note, trimmed)
+    const results = miniSearch.search(trimmed)
+    const topScore = results[0]?.score ?? 0
+    const relevant =
+      topScore > 0
+        ? results.filter((result) => result.score >= topScore * RELEVANCE_CUTOFF_FRACTION)
+        : results
 
-        return {
-          path,
-          slug,
-          title,
-          score: result.score,
-          ...(snippet !== undefined && { snippet }),
-        }
-      })
+    return relevant.slice(0, limit).map((result): VaultSearchHit => {
+      const path = String(result['path'])
+      const slug = String(result['slug'])
+      const title = String(result['title'])
+      const note = index.byPath.get(path)
+      const snippet = note === undefined ? undefined : buildSnippet(note.body, title, trimmed)
+
+      return {
+        path,
+        slug,
+        title,
+        score: result.score,
+        ...(snippet !== undefined && { snippet }),
+      }
+    })
   }, [miniSearch, debouncedQuery, limit, index])
 
   return { query, setQuery, hits, isReady: true }

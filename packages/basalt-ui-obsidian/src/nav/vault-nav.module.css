@@ -1,0 +1,54 @@
+/*
+ * VaultNav's `renderLink` seam hands back a consumer-rendered anchor (a bare `<a>`, or a router
+ * `<Link>` that renders one) whose UA-default color/underline live directly ON that element — CSS
+ * inheritance flows ancestor -> descendant, so a wrapping element's OWN inline style can never reach
+ * INTO a descendant that already carries its own explicit value. `.anchorReset`/`.anchorReset a`
+ * are the one piece of VaultNav's chrome that genuinely needs a real stylesheet rule targeting the
+ * anchor itself; every other visual (hover/active background, row/label text color, the chevron
+ * rotation, folder-vs-note weight) is driven by inline `VX.*`/`alpha()` styling on components this
+ * package renders directly (see `vault-nav.tsx`) — same split, same reasoning as basalt-ui's own
+ * `content/article-card.module.css` `.linkWrap a`, which this mirrors. (Named `anchorReset`, not
+ * `link` — under `bun:test`'s stub CSS-module loader an imported module resolves to a plain string,
+ * and `classes.link` collides with the real `String.prototype.link` method.)
+ *
+ * `.row`/`.chevron` hold only what inline styles genuinely can't express: a `(pointer: coarse)`
+ * media query. Measured mobile row heights were 41.5–45.2px; both are floored at the WCAG 2.5.8
+ * minimum target size on a touch device.
+ */
+.anchorReset {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.anchorReset a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.row {
+  min-height: 32px;
+}
+
+@media (pointer: coarse) {
+  .row {
+    min-height: 44px;
+  }
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+@media (pointer: coarse) {
+  .chevron {
+    width: 32px;
+    height: 44px;
+  }
+}

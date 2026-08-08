@@ -26,7 +26,7 @@ export { Backlinks } from './nav/backlinks.js'
 export type { BacklinksProps } from './nav/backlinks.js'
 export { TagIndex } from './nav/tag-index.js'
 export type { TagIndexProps } from './nav/tag-index.js'
-export { toVaultSearchActions, useVaultSearch } from './nav/use-vault-search.js'
+export { folderPath, toVaultSearchActions, useVaultSearch } from './nav/use-vault-search.js'
 export type {
   ToVaultSearchActionsOptions,
   UseVaultSearchOptions,

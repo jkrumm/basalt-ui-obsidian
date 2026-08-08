@@ -8,13 +8,24 @@
  * instead, alongside the routed page (`<Outlet />`). `sections` carries just a "Home" destination
  * back to the index route.
  */
-import { Box, Group, Loader, NavLink as MantineNavLink, ScrollArea } from '@mantine/core'
+import {
+  Box,
+  Drawer,
+  Group,
+  Loader,
+  NavLink as MantineNavLink,
+  ScrollArea,
+  Text,
+  UnstyledButton,
+} from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import type { NavLinkRenderer, SidebarSection } from 'basalt-ui'
 import { BasaltShell, EmptyState } from 'basalt-ui'
 import { useBasaltNav } from 'basalt-ui/router-tanstack'
 import { VX } from 'basalt-ui/tokens'
-import { VaultNav, VaultProvider, encodeSlugPath,} from 'basalt-ui-obsidian'
+import { VaultNav, VaultProvider, encodeSlugPath } from 'basalt-ui-obsidian'
 import type { VaultHrefResolver, VaultLinkRenderer } from 'basalt-ui-obsidian'
 import { useVaultIndexQuery } from '../lib/vault-data'
 import { openVaultSearch, VaultSearchSpotlight } from '../lib/vault-search-spotlight'
@@ -35,6 +46,47 @@ function IconHome() {
     >
       <path d="M3 11l9-8 9 8" />
       <path d="M5 10v10h14V10" />
+    </svg>
+  )
+}
+
+/** The mobile note-tree drawer trigger — same inline-glyph convention as `IconHome` above. */
+function IconMenu() {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  )
+}
+
+/** The mobile search-tab trigger — same inline-glyph convention as `IconHome` above. */
+function IconSearch() {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35 -4.35" />
     </svg>
   )
 }
@@ -80,6 +132,16 @@ const renderNavLink: NavLinkRenderer = (item, { active }) => (
 function RootLayout() {
   const { data: index, isLoading, isError, error } = useVaultIndexQuery()
   const { currentPath, isActive } = useBasaltNav()
+  const [drawerOpened, { open: openDrawer, close: closeDrawer }] = useDisclosure(false)
+
+  // Selecting a note must close the drawer regardless of how it happened (a row click, the vault
+  // search spotlight, browser back/forward) — `currentPath` already changes for all of those, so
+  // this is the one place that has to know, rather than threading a close call through every
+  // possible navigation source. `VaultNav`'s own `onNavigate` (wired below) covers the common
+  // click case synchronously, before the route even changes; this is the fallback for the rest.
+  useEffect(() => {
+    closeDrawer()
+  }, [currentPath, closeDrawer])
 
   const sections: SidebarSection[] = [
     {
@@ -121,21 +183,84 @@ function RootLayout() {
         renderNavLink={renderNavLink}
         search={{ onOpen: openVaultSearch }}
       >
-        <Group align="flex-start" wrap="nowrap" gap={0} h="100%">
+        {/* `sm` (48em) is `BasaltShell`'s own navbar breakpoint (`shell/index.tsx`'s
+            `navbar={{ breakpoint: 'sm' }}`) — matched here rather than a new one, so the tree
+            column and the shell's own rail collapse at the same viewport width.
+            No explicit height/overflow on this row: both children now stay in NORMAL page flow and
+            the page itself scrolls (via `AppShell.Main`), which is what lets `position: sticky`
+            below (and `ArticleLayout`'s own sticky TOC rail, several ancestors down inside
+            `<Outlet />`) actually pick up scroll range against the viewport. A bounded,
+            internally-scrolling column looked right on paper but its height never reliably tracked
+            `100dvh` across `AppShell`'s breakpoints, leaving the aside `position: static` with a
+            dead multi-thousand-pixel tail once the page outgrew it — and the same bounded
+            `overflow: auto` on the content column starved the TOC's sticky ancestor of any actual
+            scroll range. */}
+        <Group align="flex-start" wrap="nowrap" gap={0}>
           <Box
             component="aside"
+            visibleFrom="sm"
             w={280}
-            h="100%"
-            style={{ borderRight: `1px solid ${VX.surface.hairline}`, flexShrink: 0 }}
+            style={{
+              borderRight: `1px solid ${VX.surface.hairline}`,
+              flexShrink: 0,
+              position: 'sticky',
+              top: 'var(--app-shell-header-height, 0px)',
+              maxHeight: 'calc(100dvh - var(--app-shell-header-height, 0px))',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
-            <ScrollArea h="100%" p="sm">
+            <ScrollArea style={{ flex: 1, minHeight: 0 }} p="sm">
               <VaultNav {...(activePath !== undefined && { activePath })} />
             </ScrollArea>
           </Box>
-          <Box flex={1} h="100%" style={{ minWidth: 0, overflow: 'auto' }} p="md">
+          <Box flex={1} style={{ minWidth: 0 }} p="md">
             <Outlet />
           </Box>
         </Group>
+        <Drawer
+          opened={drawerOpened}
+          onClose={closeDrawer}
+          position="left"
+          size={280}
+          padding={0}
+          title="Notes"
+          classNames={{ body: 'vault-nav-drawer-body' }}
+        >
+          <ScrollArea h="100%" p="sm">
+            <VaultNav {...(activePath !== undefined && { activePath })} onNavigate={closeDrawer} />
+          </ScrollArea>
+        </Drawer>
+        {/* Mobile bottom action bar: replaces `BasaltShell`'s own built-in mobile nav (hidden via
+            `.mantine-AppShell-footer nav { display: none }` in `styles/safe-area.css`), whose
+            "Vault" tab opened a sheet containing only the Home link and whose "More" tab duplicated
+            it via the full navbar overlay — neither surfaced the actual note tree. Exactly two
+            direct actions instead: the note tree (this file's own `Drawer` above) and search
+            (`openVaultSearch`, `../lib/vault-search-spotlight`). */}
+        <Box component="nav" hiddenFrom="sm" aria-label="Primary" className="mobile-shell-tabbar">
+          <UnstyledButton
+            type="button"
+            className="mobile-shell-tab"
+            onClick={openDrawer}
+            aria-label="Open note tree"
+          >
+            <IconMenu />
+            <Text component="span" className="mobile-shell-tab-label">
+              Vault
+            </Text>
+          </UnstyledButton>
+          <UnstyledButton
+            type="button"
+            className="mobile-shell-tab"
+            onClick={openVaultSearch}
+            aria-label="Open search"
+          >
+            <IconSearch />
+            <Text component="span" className="mobile-shell-tab-label">
+              Search
+            </Text>
+          </UnstyledButton>
+        </Box>
       </BasaltShell>
     </VaultProvider>
   )

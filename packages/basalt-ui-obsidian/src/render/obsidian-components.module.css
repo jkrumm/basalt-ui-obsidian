@@ -1,0 +1,75 @@
+/*
+ * Extra visual rules `obsidian-components.tsx` needs that basalt-ui's own component CSS can't
+ * give it — either because the element shape is new (a folded callout's `<details>`, a Dataview
+ * fence's inert panel) or because the fix is a narrow, vault-specific override basalt-ui's own
+ * CSS Module isn't the right owner of (the mobile table-cell font bump).
+ */
+
+/* Folded callout — `<details>` wraps `Callout`'s own root `div`, which takes it OUT of Prose's
+ * `.root.article > div` block-gap selector (prose.module.css); the same token is reapplied here so
+ * a folded callout carries the same vertical rhythm as every other block. */
+.foldRoot {
+  margin: var(--vx-space-prose-article-block-gap) 0;
+}
+
+.foldSummary {
+  cursor: pointer;
+  font-family: var(--basalt-font-head);
+  font-stretch: 88%;
+  font-weight: 550;
+  font-size: var(--vx-text-lg);
+  padding-bottom: var(--vx-space-stack-xs);
+}
+
+.foldSummary::marker {
+  color: var(--vx-muted);
+}
+
+.foldSummary:focus-visible {
+  outline: 2px solid var(--vx-accent);
+  outline-offset: 2px;
+  border-radius: var(--vx-radius-ctrl);
+}
+
+/* Dataview fence — a labelled, inert panel (not `CodeBlock`: no copy button offering to copy a
+ * query nothing here can run, no language tab). Mirrors `CodeBlock`'s bordered-panel look via the
+ * same tokens so it doesn't read as a foreign element on the page. */
+.dataview {
+  border: 1px solid var(--vx-surface-border);
+  border-radius: var(--vx-radius-card);
+  padding: var(--vx-space-callout-inset-y) var(--vx-space-callout-inset-x);
+  background: var(--vx-surface-panel);
+}
+
+.dataviewCaption {
+  margin: 0 0 var(--vx-space-stack-xs);
+  font-family: var(--basalt-font-mono);
+  font-size: var(--vx-text-micro);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vx-faint);
+}
+
+.dataviewCode {
+  margin: 0;
+  font-family: var(--basalt-font-mono);
+  font-size: var(--vx-text-sm);
+  color: var(--vx-ink2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Table cells — basalt's own `prose.module.css` sizes these for desktop density (13.5px/11px,
+ * `--vx-text-sm`/`--vx-text-micro`). Measured on a 393px viewport that pair reads too small to be
+ * the READING size, not too large — so a narrow-viewport override steps both UP a rung, never
+ * below what desktop already ships. */
+@media (max-width: 480px) {
+  .cell {
+    font-size: var(--vx-text-md);
+  }
+
+  .headerCell {
+    font-size: var(--vx-text-sm);
+  }
+}
