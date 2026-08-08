@@ -1,0 +1,46 @@
+{
+  "name": "obsidian-vault-core",
+  "version": "0.0.0",
+  "description": "Framework-free Obsidian vault parser: index, link resolution, remark plugins, search index.",
+  "license": "Apache-2.0",
+  "author": "Johannes Krumm",
+  "files": [
+    "dist/",
+    "src/"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./remark": {
+      "types": "./dist/remark/index.d.ts",
+      "import": "./dist/remark/index.js"
+    },
+    "./search": {
+      "types": "./dist/search/index.d.ts",
+      "import": "./dist/search/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup && tsc --emitDeclarationOnly --declarationMap",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "verify": "publint && attw --pack ."
+  },
+  "dependencies": {
+    "mdast-util-find-and-replace": "3.0.2",
+    "minisearch": "7.2.0",
+    "unist-util-visit": "5.1.0",
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.14",
+    "@types/mdast": "4.0.4",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5"
+  }
+}

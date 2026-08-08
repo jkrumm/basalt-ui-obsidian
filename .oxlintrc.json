@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "promise", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-var": "error",
+    "eqeqeq": "error",
+    "no-console": "warn",
+    "no-shadow": "off",
+    "typescript/no-explicit-any": "error",
+    "import/no-duplicates": "error",
+    "import/no-default-export": "error",
+    "import/consistent-type-specifier-style": "error",
+    "import/no-unassigned-import": "off"
+  },
+  "ignorePatterns": ["dist", "node_modules", "**/tests/fixtures/**", "**/tsup.config.ts"],
+  "overrides": [
+    {
+      "files": ["**/tests/**"],
+      "rules": {
+        "no-console": "off",
+        // Fixture builders scoped inside their `describe` are idiomatic and keep a test readable;
+        // the rule exists to stop re-creating closures on a hot path, which a test file has none of.
+        "unicorn/consistent-function-scoping": "off"
+      }
+    }
+  ]
+}

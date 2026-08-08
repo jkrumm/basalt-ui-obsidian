@@ -1,0 +1,20 @@
+/**
+ * iOS PWA safe-area padding.
+ *
+ * `viewport-fit=cover` (auto-injected into <head> by `basaltAppPlugin`, since `index.html` ships no
+ * viewport meta of its own) lets the app draw under the notch / home indicator; these
+ * `env(safe-area-inset-*)` paddings pull real content back inside it.
+ *
+ * iOS 26.1 shipped a WebKit regression (bug #301994) where `env(safe-area-inset-top)` resolves to
+ * 0 for an installed (standalone) PWA — fixed in 26.2, then regressed again on 26.5.2 and reopened
+ * July 2026. The rule below MUST NOT collapse the layout when the inset is 0: these are additive
+ * paddings stacked on top of `BasaltShell`'s own fixed header/nav heights, not load-bearing for
+ * them, so a 0 inset just means content sits flush with the (still physically present) status bar
+ * instead of clear of it — never a broken or invisible shell.
+ */
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
