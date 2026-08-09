@@ -20,6 +20,8 @@ export type VaultBundleTreeNode = {
   readonly path: string
   readonly kind: 'folder' | 'note'
   readonly children?: readonly VaultBundleTreeNode[]
+  /** Carried through verbatim from {@link VaultTreeNode.icon} — see its doc. */
+  readonly icon?: string
 }
 
 export type VaultBundle = {
@@ -37,6 +39,7 @@ function stripTree(node: VaultTreeNode): VaultBundleTreeNode {
     path: node.path,
     kind: node.kind,
     ...(node.children !== undefined && { children: node.children.map(stripTree) }),
+    ...(node.icon !== undefined && { icon: node.icon }),
   }
 }
 
@@ -53,6 +56,7 @@ function relinkTree(
       children: node.children.map((child) => relinkTree(child, byPath)),
     }),
     ...(note !== undefined && { note }),
+    ...(node.icon !== undefined && { icon: node.icon }),
   }
 }
 

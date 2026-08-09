@@ -8,6 +8,7 @@
 export { readVault } from './vault-reader.js'
 export { resolveLinkPath } from './links.js'
 export { slugify } from './slug.js'
+export { collectSortingSpecs, parseSortingSpec, readFolderIcons } from './nav-config.js'
 
 export type {
   ReadVaultOptions,

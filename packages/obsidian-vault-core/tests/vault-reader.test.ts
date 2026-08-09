@@ -111,4 +111,97 @@ describe('readVault', () => {
     const index = await readVault(root)
     expect(index.tree.children?.map((c) => c.name)).toEqual(['folder', 'a'])
   })
+
+  describe('plugin config (icons + sorting-spec)', () => {
+    async function ignoreExactPath(relPath: string): Promise<void> {
+      await mkdir(join(root, '.obsidian'), { recursive: true })
+      await writeFile(
+        join(root, '.obsidian', 'app.json'),
+        JSON.stringify({ userIgnoreFilters: [relPath] }),
+        'utf8',
+      )
+    }
+
+    async function writeIconizeData(content: string): Promise<void> {
+      const dir = join(root, '.obsidian', 'plugins', 'obsidian-icon-folder')
+      await mkdir(dir, { recursive: true })
+      await writeFile(join(dir, 'data.json'), content, 'utf8')
+    }
+
+    test('an individually-ignored note stays out of the public index but still reorders siblings', async () => {
+      await writeNote(
+        root,
+        'sortspec.md',
+        '---\nsorting-spec: |\n  target-folder: /\n  b\n  a\n---\n',
+      )
+      await writeNote(root, 'a.md', 'A')
+      await writeNote(root, 'b.md', 'B')
+      await ignoreExactPath('sortspec.md')
+
+      const index = await readVault(root)
+
+      // `readdir` order is filesystem-dependent, not guaranteed alphabetical — sort before
+      // comparing so this doesn't flake on a filesystem that returns creation order.
+      expect(index.notes.map((n) => n.path).toSorted()).toEqual(['a.md', 'b.md'])
+      expect(index.byPath.has('sortspec.md')).toBe(false)
+      // 'b' before 'a' — the alphabetical default would be the reverse — proves the ignored note's
+      // own sorting-spec still reached buildTree.
+      expect(index.tree.children?.map((c) => c.name)).toEqual(['b', 'a'])
+    })
+
+    test("a wikilink inside an individually-ignored note does not leak into another note's backlinks", async () => {
+      await writeNote(root, 'ignored.md', 'Links to [[a]].')
+      await writeNote(root, 'a.md', 'A')
+      await ignoreExactPath('ignored.md')
+
+      const index = await readVault(root)
+
+      // The real risk: `ignored.md` is still fully PARSED (for its frontmatter) now, so a naive
+      // implementation could accidentally resolve and register its links too.
+      expect(index.backlinks.get('a.md') ?? []).toEqual([])
+      expect(index.byPath.has('ignored.md')).toBe(false)
+    })
+
+    test('readVault applies Iconize icons end-to-end, alongside sibling order', async () => {
+      await writeNote(root, 'a.md', 'A')
+      await writeNote(root, 'b.md', 'B')
+      await writeIconizeData(JSON.stringify({ settings: {}, a: 'LiCamera', b: 'LiBook' }))
+
+      const index = await readVault(root)
+
+      expect(index.tree.children?.find((c) => c.name === 'a')?.icon).toBe('LiCamera')
+      expect(index.tree.children?.find((c) => c.name === 'b')?.icon).toBe('LiBook')
+    })
+
+    test('a malformed obsidian-icon-folder data.json does not error — just contributes no icons', async () => {
+      await writeNote(root, 'a.md', 'A')
+      await writeIconizeData('{not json')
+
+      const index = await readVault(root)
+      expect(index.tree.children?.[0]?.icon).toBeUndefined()
+    })
+
+    test('useObsidianPluginConfig: false restores pre-plugin-config behaviour byte for byte', async () => {
+      await writeNote(
+        root,
+        'sortspec.md',
+        '---\nsorting-spec: |\n  target-folder: /\n  b\n  a\n---\n',
+      )
+      await writeNote(root, 'a.md', 'A')
+      await writeNote(root, 'b.md', 'B')
+      await ignoreExactPath('sortspec.md')
+      await writeIconizeData(JSON.stringify({ a: 'LiCamera' }))
+
+      const index = await readVault(root, { useObsidianPluginConfig: false })
+
+      // The ignored note is pruned during the walk itself now (never parsed at all), not merely
+      // filtered out of the public index afterward — there is no other way to observe that
+      // difference from outside `readVault`, so this is the closest black-box proof available.
+      expect(index.notes.map((n) => n.path).toSorted()).toEqual(['a.md', 'b.md'])
+      // Its sorting-spec never reached buildTree, so the default alphabetical order stands.
+      expect(index.tree.children?.map((c) => c.name)).toEqual(['a', 'b'])
+      // Iconize's data.json was never read either.
+      expect(index.tree.children?.[0]?.icon).toBeUndefined()
+    })
+  })
 })

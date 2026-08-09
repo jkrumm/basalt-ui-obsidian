@@ -3,10 +3,13 @@
  *
  * The browser never runs `readVault` (it needs a filesystem). It fetches a `VaultBundle` emitted
  * at build time and rehydrates it with `fromVaultBundle`, so the provider takes an already-built
- * `VaultIndex` and adds only the two things a renderer needs on top of it: how a note path becomes
- * a URL (`hrefFor`), and how a URL becomes a link element in whatever router the host app uses
- * (`renderLink`). Both are consumer-supplied — this package stays router-agnostic, the same way
- * `BasaltShell` does.
+ * `VaultIndex` and adds the things a renderer needs on top of it: how a note path becomes a URL
+ * (`hrefFor`), how a URL becomes a link element in whatever router the host app uses (`renderLink`),
+ * and how a `VaultTreeNode.icon` name becomes an element (`renderIcon`). All three are
+ * consumer-supplied — this package stays router-agnostic AND icon-library-agnostic, the same way
+ * `BasaltShell` does for routing. `renderIcon` has no default (unlike `renderLink`'s plain `<a>`):
+ * there is no icon-library-free fallback, so a missing seam or a missing icon both mean "render
+ * nothing" — see `vault-nav.tsx`'s row-icon slot.
  */
 import { createContext, use, useMemo } from 'react'
 import type { ReactNode } from 'react'
@@ -18,10 +21,15 @@ export type VaultHrefResolver = (note: VaultNote, anchor?: string) => string
 /** Renders an internal link. `href` is already the output of {@link VaultHrefResolver}. */
 export type VaultLinkRenderer = (href: string, children: ReactNode) => ReactNode
 
+/** Renders a `VaultTreeNode.icon` name (an Iconize id like `LiCamera`) as an element. */
+export type VaultIconRenderer = (iconName: string) => ReactNode
+
 export type VaultContextValue = {
   readonly index: VaultIndex
   readonly hrefFor: VaultHrefResolver
   readonly renderLink: VaultLinkRenderer
+  /** `undefined` when the consumer supplied none — see the module doc for why there's no default. */
+  readonly renderIcon: VaultIconRenderer | undefined
   /**
    * Resolves a raw wikilink target from a note to a complete href, anchor included, or `undefined`
    * for a dead link. This is exactly the callback `remarkObsidianWikilink` wants — it is built
@@ -42,6 +50,12 @@ export type VaultProviderProps = {
   readonly hrefFor?: VaultHrefResolver
   /** Default: a plain `<a href>`. Supply a router `<Link>` for client-side navigation. */
   readonly renderLink?: VaultLinkRenderer
+  /**
+   * Default: no icon is rendered at all. Obsidian doesn't reserve icon space for a node its own
+   * Iconize plugin has no entry for, and neither does this package — omit this prop and every
+   * `VaultNav` row falls back to exactly today's icon-free layout.
+   */
+  readonly renderIcon?: VaultIconRenderer
   readonly children: ReactNode
 }
 
@@ -72,19 +86,26 @@ function defaultRenderLink(href: string, children: ReactNode): ReactNode {
   return <a href={href}>{children}</a>
 }
 
-export function VaultProvider({ index, hrefFor, renderLink, children }: VaultProviderProps) {
+export function VaultProvider({
+  index,
+  hrefFor,
+  renderLink,
+  renderIcon,
+  children,
+}: VaultProviderProps) {
   const value = useMemo<VaultContextValue>(() => {
     const href = hrefFor ?? defaultHrefFor
     return {
       index,
       hrefFor: href,
       renderLink: renderLink ?? defaultRenderLink,
+      renderIcon,
       resolveWikilink: (target, fromPath, anchor) => {
         const note = index.resolve(target, fromPath)
         return note === undefined ? undefined : href(note, anchor)
       },
     }
-  }, [index, hrefFor, renderLink])
+  }, [index, hrefFor, renderLink, renderIcon])
 
   return <VaultContext value={value}>{children}</VaultContext>
 }

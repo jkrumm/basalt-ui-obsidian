@@ -52,6 +52,16 @@
  * The chevron's own CSS box (`classes.chevron`) is reused, empty and un-clickable, as the
  * notes' alignment spacer too — same box, same width at both pointer densities, no second class.
  *
+ * The icon slot (`RowIcon`) sits between the chevron spacer and the label, inside the same row
+ * flex both already live in — no new wrapper, no per-row state. It reads `node.icon` (set by
+ * `obsidian-vault-core`'s `buildTree` from Iconize's `data.json`) and the `renderIcon` seam
+ * (`context.tsx`) and renders nothing unless BOTH are present, matching Obsidian itself: a node
+ * with no configured icon reserves no icon space. `aria-hidden` because the row's accessible name
+ * is entirely the label (`aria-labelledby` -> `RowLabel`'s `id`), same reasoning as the chevron.
+ * Sized at 14px — the same pixel value `RowLabel`'s `size="sm"` `Text` resolves to — so the icon
+ * reads as optically matched to the label rather than towering over or shrinking under it; the
+ * actual SVG sizing is the consumer's `renderIcon` call, this file only bounds the wrapping box.
+ *
  * The `renderLink` seam: `VaultLinkRenderer` (`context.tsx`, untouched here) is only
  * `(href, children) => ReactNode`, so it hands back a consumer-owned element (a plain `<a>`, or a
  * router `<Link>`) whose props this file cannot set. Both things the ideal DOM would put on that
@@ -69,8 +79,12 @@ import { useLocalStorage, useReducedMotion } from '@mantine/hooks'
 import { VX } from 'basalt-ui/tokens'
 import { foldDiacritics } from 'obsidian-vault-core/search'
 import type { VaultNote, VaultTreeNode } from 'obsidian-vault-core'
+import type { VaultIconRenderer } from '../context.js'
 import { useVault } from '../context.js'
 import classes from './vault-nav.module.css'
+
+/** Pixel size of the icon slot — matches `RowLabel`'s `size="sm"` `Text`, see the module doc. */
+const ROW_ICON_SIZE_PX = 14
 
 export type VaultNavProps = {
   readonly activePath?: string
@@ -218,6 +232,33 @@ function RowLabel({ id, label, color, weight }: RowLabelProps) {
   )
 }
 
+type RowIconProps = {
+  readonly icon: string | undefined
+  readonly renderIcon: VaultIconRenderer | undefined
+}
+
+/** Renders `node.icon` via the consumer's `renderIcon` seam, or nothing at all when either half is
+ * missing — see the module doc's icon-slot paragraph. `aria-hidden` because the row's accessible
+ * name lives entirely on `RowLabel`. */
+function RowIcon({ icon, renderIcon }: RowIconProps) {
+  if (icon === undefined || renderIcon === undefined) return null
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        width: ROW_ICON_SIZE_PX,
+        height: ROW_ICON_SIZE_PX,
+      }}
+    >
+      {renderIcon(icon)}
+    </span>
+  )
+}
+
 type VaultNavRowProps = {
   readonly node: VaultTreeNode
   readonly depth: number
@@ -241,7 +282,7 @@ function VaultNavRow({
   onRowFocus,
   registerRef,
 }: VaultNavRowProps) {
-  const { hrefFor, renderLink } = useVault()
+  const { hrefFor, renderLink, renderIcon } = useVault()
   const reactId = useId()
   const labelId = `vault-nav-label-${reactId}-${sanitizeForId(node.path)}`
   const tabIndex = tabbablePath === node.path ? 0 : -1
@@ -279,6 +320,7 @@ function VaultNavRow({
           {/* Empty, un-clickable — reserves the exact same box the chevron occupies so note and
               folder labels stay aligned at every depth and pointer density. */}
           <span className={classes.chevron} aria-hidden="true" />
+          <RowIcon icon={node.icon} renderIcon={renderIcon} />
           <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }}>
             {renderLink(
               hrefFor(note),
@@ -342,6 +384,7 @@ function VaultNavRow({
         >
           ▸
         </span>
+        <RowIcon icon={node.icon} renderIcon={renderIcon} />
         {folderNote !== undefined ? (
           <div
             className={classes.anchorReset}

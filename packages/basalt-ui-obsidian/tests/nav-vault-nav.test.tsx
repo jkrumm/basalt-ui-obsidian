@@ -116,6 +116,38 @@ function renderNav(props: { activePath?: string; storageKey: string }) {
   )
 }
 
+/** A tree with one folder and one note both carrying an icon, for the icon-slot tests below. */
+function buildIconIndex(): VaultIndex {
+  const inbox = note('Inbox.md', 'Inbox')
+  const engineering = note('Areas/Engineering.md', 'Engineering')
+  const notes = [inbox, engineering]
+  return {
+    notes,
+    byPath: new Map(notes.map((n) => [n.path, n])),
+    bySlug: new Map(notes.map((n) => [n.slug, n])),
+    backlinks: new Map(),
+    tags: new Map(),
+    tree: {
+      name: '',
+      path: '',
+      kind: 'folder',
+      children: [
+        {
+          name: 'Areas',
+          path: 'Areas',
+          kind: 'folder',
+          icon: 'LiLightbulb',
+          children: [
+            { name: 'Engineering', path: 'Areas/Engineering.md', kind: 'note', note: engineering },
+          ],
+        },
+        { name: 'Inbox', path: 'Inbox.md', kind: 'note', note: inbox, icon: 'LiInbox' },
+      ],
+    },
+    resolve: () => undefined,
+  }
+}
+
 /** Clicks the folder's chevron (mouse path), scoped to its treeitem so this can't accidentally hit
  * a same-glyph chevron belonging to a different folder. */
 function clickChevron(name: string) {
@@ -430,5 +462,69 @@ describe('VaultNav', () => {
     fireEvent.keyDown(areas, { key: 'i' })
 
     expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
+  })
+
+  describe('icon slot', () => {
+    const renderIcon = (iconName: string) => (
+      <span data-testid={`icon-${iconName}`}>{iconName}</span>
+    )
+
+    test('renders the icon when both renderIcon and the node icon are present', () => {
+      render(
+        <MantineProvider>
+          <VaultProvider index={buildIconIndex()} renderIcon={renderIcon}>
+            <VaultNav storageKey="nav-icon-present" />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      expect(screen.getByTestId('icon-LiInbox')).toBeDefined()
+    })
+
+    test('renders nothing for a node with no icon, even when renderIcon is supplied', () => {
+      render(
+        <MantineProvider>
+          <VaultProvider index={buildIconIndex()} renderIcon={renderIcon}>
+            <VaultNav storageKey="nav-icon-no-node-icon" />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      // Expand 'Areas' (which has an icon) so its child 'Engineering' (which does NOT) is visible.
+      clickChevron('Areas')
+      expect(screen.getByRole('treeitem', { name: 'Engineering' })).toBeDefined()
+      expect(screen.getByTestId('icon-LiLightbulb')).toBeDefined()
+      // Exactly 'Areas' (LiLightbulb) and 'Inbox' (LiInbox) — 'Engineering' contributes none.
+      expect(screen.getAllByTestId(/^icon-/)).toHaveLength(2)
+    })
+
+    test('renders nothing when the node has an icon but no renderIcon was supplied', () => {
+      render(
+        <MantineProvider>
+          <VaultProvider index={buildIconIndex()}>
+            <VaultNav storageKey="nav-icon-no-renderer" />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      expect(screen.queryByTestId(/^icon-/)).toBeNull()
+    })
+
+    test('the icon is aria-hidden and does not contribute to the row accessible name', () => {
+      render(
+        <MantineProvider>
+          <VaultProvider index={buildIconIndex()} renderIcon={renderIcon}>
+            <VaultNav storageKey="nav-icon-aria" />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      const icon = screen.getByTestId('icon-LiInbox')
+      expect(icon.closest('[aria-hidden="true"]')).not.toBeNull()
+
+      // The row's accessible name comes from aria-labelledby -> RowLabel's id, i.e. just "Inbox" —
+      // it must not also read "LiInbox" from the hidden icon span.
+      expect(screen.getByRole('treeitem', { name: 'Inbox' })).toBeDefined()
+    })
   })
 })

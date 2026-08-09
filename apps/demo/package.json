@@ -20,6 +20,7 @@
     "basalt-ui": "1.13.0",
     "basalt-ui-obsidian": "workspace:*",
     "beautiful-mermaid": "1.1.3",
+    "lucide-react": "1.29.0",
     "motion": "12.42.0",
     "obsidian-vault-core": "workspace:*",
     "react": "^19.2.7",

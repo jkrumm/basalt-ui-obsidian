@@ -61,6 +61,55 @@ describe('toVaultBundle / fromVaultBundle', () => {
     expect(rehydrated.tree).toEqual(original.tree)
   })
 
+  test('a tree node icon survives the round trip', () => {
+    const a = note({ path: 'a.md', slug: 'a' })
+
+    const original: VaultIndex = {
+      notes: [a],
+      byPath: new Map([['a.md', a]]),
+      bySlug: new Map([['a', a]]),
+      backlinks: new Map(),
+      tags: new Map(),
+      tree: {
+        name: '',
+        path: '',
+        kind: 'folder',
+        icon: 'LiBrain',
+        children: [{ name: 'a', path: 'a.md', kind: 'note', note: a, icon: 'LiCamera' }],
+      },
+      resolve: () => undefined,
+    }
+
+    const rehydrated = fromVaultBundle(JSON.parse(JSON.stringify(toVaultBundle(original))))
+
+    expect(rehydrated.tree.icon).toBe('LiBrain')
+    expect(rehydrated.tree.children?.[0]?.icon).toBe('LiCamera')
+  })
+
+  test('a tree node with no icon still round trips without gaining one', () => {
+    const a = note({ path: 'a.md', slug: 'a' })
+
+    const original: VaultIndex = {
+      notes: [a],
+      byPath: new Map([['a.md', a]]),
+      bySlug: new Map([['a', a]]),
+      backlinks: new Map(),
+      tags: new Map(),
+      tree: {
+        name: '',
+        path: '',
+        kind: 'folder',
+        children: [{ name: 'a', path: 'a.md', kind: 'note', note: a }],
+      },
+      resolve: () => undefined,
+    }
+
+    const rehydrated = fromVaultBundle(JSON.parse(JSON.stringify(toVaultBundle(original))))
+
+    expect(rehydrated.tree.icon).toBeUndefined()
+    expect(rehydrated.tree.children?.[0]?.icon).toBeUndefined()
+  })
+
   test('the rehydrated resolve() resolves links the same way the original vault would', () => {
     const a = note({ path: 'folder/a.md', slug: 'folder/a' })
     const b = note({ path: 'folder/b.md', slug: 'folder/b', basename: 'b', title: 'B' })

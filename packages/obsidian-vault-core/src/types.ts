@@ -65,6 +65,13 @@ export type VaultTreeNode = {
   readonly children?: readonly VaultTreeNode[]
   /** Present only when `kind === 'note'`. */
   readonly note?: VaultNote
+  /**
+   * The raw Iconize icon name (a Lucide id like `LiCamera`), when the vault's
+   * `.obsidian/plugins/obsidian-icon-folder/data.json` names this node. Deliberately not resolved
+   * to a component here — this package stays free of any icon library; a consumer maps the name to
+   * whatever it renders with.
+   */
+  readonly icon?: string
 }
 
 /** The parsed vault: every note plus the indexes built over them. */
@@ -100,4 +107,17 @@ export type ReadVaultOptions = {
    * no extra filters.
    */
   readonly useObsidianIgnoreFilters?: boolean
+  /**
+   * When true (the default), honors every piece of Obsidian plugin config this package knows how
+   * to read: `.obsidian/plugins/obsidian-icon-folder/data.json` (per-path icons) and `sorting-spec`
+   * frontmatter (explicit sibling order, scanned across every parsed note — see
+   * `collectSortingSpecs`), and — because a note can carry a `sorting-spec` while also being
+   * individually excluded from `userIgnoreFilters` — every `.md` file is parsed regardless of
+   * file-level ignores, with ignored ones then filtered back out of the public `notes`/`byPath`/
+   * tree membership. `false` turns all of that off at once and restores the pre-plugin-config
+   * behavior exactly: no icons, no explicit order, and an individually-ignored file is pruned
+   * during the walk itself rather than parsed and filtered out afterward. A missing or malformed
+   * `data.json` is never an error either way — it just contributes no icons.
+   */
+  readonly useObsidianPluginConfig?: boolean
 }

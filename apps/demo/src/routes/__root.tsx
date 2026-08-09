@@ -28,6 +28,7 @@ import { VX } from 'basalt-ui/tokens'
 import { VaultNav, VaultProvider, encodeSlugPath } from 'basalt-ui-obsidian'
 import type { VaultHrefResolver, VaultLinkRenderer } from 'basalt-ui-obsidian'
 import { useVaultIndexQuery } from '../lib/vault-data'
+import { renderVaultIcon } from '../lib/vault-icons'
 import { openVaultSearch, VaultSearchSpotlight } from '../lib/vault-search-spotlight'
 
 /** Inline glyph — matches the shell's own icon-dependency-free convention (no @tabler/icons). */
@@ -175,7 +176,12 @@ function RootLayout() {
   const activePath = activeSlug !== undefined ? index.bySlug.get(activeSlug)?.path : undefined
 
   return (
-    <VaultProvider index={index} hrefFor={hrefFor} renderLink={renderLink}>
+    <VaultProvider
+      index={index}
+      hrefFor={hrefFor}
+      renderLink={renderLink}
+      renderIcon={renderVaultIcon}
+    >
       <VaultSearchSpotlight />
       <BasaltShell
         brand={{ name: 'Brain' }}
