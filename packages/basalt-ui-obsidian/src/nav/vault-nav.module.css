@@ -4,16 +4,38 @@
  * inheritance flows ancestor -> descendant, so a wrapping element's OWN inline style can never reach
  * INTO a descendant that already carries its own explicit value. `.anchorReset`/`.anchorReset a`
  * are the one piece of VaultNav's chrome that genuinely needs a real stylesheet rule targeting the
- * anchor itself; every other visual (hover/active background, row/label text color, the chevron
- * rotation, folder-vs-note weight) is driven by inline `VX.*`/`alpha()` styling on components this
- * package renders directly (see `vault-nav.tsx`) — same split, same reasoning as basalt-ui's own
- * `content/article-card.module.css` `.linkWrap a`, which this mirrors. (Named `anchorReset`, not
- * `link` — under `bun:test`'s stub CSS-module loader an imported module resolves to a plain string,
- * and `classes.link` collides with the real `String.prototype.link` method.)
+ * anchor itself. (Named `anchorReset`, not `link` — under `bun:test`'s stub CSS-module loader an
+ * imported module resolves to a plain string, and `classes.link` collides with the real
+ * `String.prototype.link` method.)
  *
- * `.row`/`.chevron` hold only what inline styles genuinely can't express: a `(pointer: coarse)`
- * media query. Measured mobile row heights were 41.5–45.2px; both are floored at the WCAG 2.5.8
- * minimum target size on a touch device.
+ * The tree itself (`vault-nav.tsx`'s own doc has the DOM shape) is selected by CSS-module CLASS —
+ * `.tree` / `.item` / `.group` — never by a bare `[role='tree']`-style attribute selector. A CSS
+ * module only rewrites CLASS names; an attribute selector passes through verbatim and ships as a
+ * GLOBAL rule, which for a published package means restyling every `role="tree"` on a consumer's
+ * page. The extra entries this costs in `vault-nav.module.css.d.ts`'s hand-authored declaration
+ * list are the price of the scoping, not a reason to skip it.
+ *
+ * Indentation is structural now (each level nests inside a real `[role="group"]` `<ul>`) instead
+ * of a flat `depth * 12px` inline offset — `margin-left: 11px` + `border-left: 1px` sums to the
+ * SAME 12px step per level the old flat offset produced, but the border now doubles as an indent
+ * guide (same idea as GitHub Primer's `TreeView` and VS Code). The guide color is `transparent` by
+ * default and only resolves to `--vx-divider` (the same token basalt-ui documents for a "sidebar
+ * child indent") while the tree is hovered or contains focus — a single custom-property flip, not
+ * a selector that re-matches all 26+ rows.
+ *
+ * Row hover moved OFF a per-row `useState` (26 rows re-rendering on every `mousemove`) and onto
+ * plain `:hover` — CSS does this for free. The one piece hover still needs to hand back to JS is
+ * the resolved label TEXT color: `.row:hover` sets `--vault-nav-hover-ink`, and each label's own
+ * inline `color: var(--vault-nav-hover-ink, <resting shade>)` (`vault-nav.tsx`'s `RowLabel`
+ * callers) picks it up — an element's inline `style` always wins specificity for a property it
+ * sets, but a `var()` REFERENCE inside that value still resolves through the normal custom
+ * -property cascade, so an ancestor's `:hover` reaches the descendant's inline color.
+ *
+ * `.row`/`.chevron` hold what inline styles can't express: `:hover`, the indent-guide/hover-ink
+ * custom properties, and the `(pointer: coarse)` media query. Measured mobile row heights were
+ * 41.5-45.2px; both are floored at the WCAG 2.5.8 minimum target size on a touch device. The
+ * `.chevron` box is reused, empty and un-clickable, as the notes' alignment spacer too — same
+ * width at every breakpoint, no second exported class.
  */
 .anchorReset {
   display: block;
@@ -27,8 +49,49 @@
   color: inherit;
 }
 
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  --vault-nav-guide: transparent;
+}
+
+.tree:hover,
+.tree:focus-within {
+  --vault-nav-guide: var(--vx-divider);
+}
+
+.item {
+  list-style: none;
+}
+
+.group {
+  list-style: none;
+  margin: 0 0 0 11px;
+  padding: 0;
+  border-left: 1px solid var(--vault-nav-guide);
+}
+
 .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-height: 32px;
+  padding: 6px 8px;
+  border-radius: var(--vx-radius-tight);
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 120ms ease;
+}
+
+.row:hover {
+  background-color: color-mix(in srgb, var(--vx-ink) 6%, transparent);
+  --vault-nav-hover-ink: var(--vx-ink);
+}
+
+.row[data-active='true'] {
+  background-color: color-mix(in srgb, var(--vx-accent) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--vx-accent);
 }
 
 @media (pointer: coarse) {
@@ -44,6 +107,7 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
+  cursor: pointer;
 }
 
 @media (pointer: coarse) {

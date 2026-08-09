@@ -234,10 +234,20 @@ function RootLayout() {
         {/* Mobile bottom action bar: replaces `BasaltShell`'s own built-in mobile nav (hidden via
             `.mantine-AppShell-footer nav { display: none }` in `styles/safe-area.css`), whose
             "Vault" tab opened a sheet containing only the Home link and whose "More" tab duplicated
-            it via the full navbar overlay — neither surfaced the actual note tree. Exactly two
-            direct actions instead: the note tree (this file's own `Drawer` above) and search
-            (`openVaultSearch`, `../lib/vault-search-spotlight`). */}
+            it via the full navbar overlay — neither surfaced the actual note tree. Three direct
+            actions instead: home (the app-shell header this app deletes at every breakpoint,
+            `styles/safe-area.css`, was the only other back-to-home affordance), the note tree (this
+            file's own `Drawer` above) and search (`openVaultSearch`,
+            `../lib/vault-search-spotlight`). */}
         <Box component="nav" hiddenFrom="sm" aria-label="Primary" className="mobile-shell-tabbar">
+          {/* A real router `Link`, not a click handler — cmd-click, long-press, and open-in-new-tab
+              all need a genuine anchor `href` underneath, which only `Link` provides. */}
+          <Link to="/" className="mobile-shell-tab" aria-label="Go to vault home">
+            <IconHome />
+            <Text component="span" className="mobile-shell-tab-label">
+              Home
+            </Text>
+          </Link>
           <UnstyledButton
             type="button"
             className="mobile-shell-tab"

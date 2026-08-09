@@ -1,13 +1,14 @@
 /**
- * `countNotes`/`areaAnchorId` back the home view's "structure" section (`routes/index.tsx`) — the
- * top-level `VaultIndex.tree` folders rendered as tappable overview tiles instead of the vault
- * being led with an alphabetical wall of tags. Both are plain functions over a `VaultTreeNode`,
- * testable without mounting the route (no router/DOM needed) — same reasoning as
- * `vault-search-spotlight.test.ts`'s exported pure helpers.
+ * `countNotes`/`areaAnchorId`/`groupByAreaAndSubArea` back the home view's "structure" and note
+ * sections (`routes/index.tsx`) — the top-level `VaultIndex.tree` folders rendered as tappable
+ * overview tiles, and the note grid grouped two levels deep underneath, instead of the vault being
+ * led with an alphabetical wall of tags or one flat 40+-note dump per area. All are plain functions
+ * over `VaultTreeNode`/`VaultNote`, testable without mounting the route (no router/DOM needed) —
+ * same reasoning as `vault-search-spotlight.test.ts`'s exported pure helpers.
  */
 import { describe, expect, test } from 'bun:test'
-import type { VaultTreeNode } from 'obsidian-vault-core'
-import { areaAnchorId, countNotes } from '../src/routes/index.js'
+import type { VaultNote, VaultTreeNode } from 'obsidian-vault-core'
+import { areaAnchorId, countNotes, groupByAreaAndSubArea } from '../src/routes/index.js'
 
 const note = (name: string): VaultTreeNode => ({
   name,
@@ -31,6 +32,18 @@ const folder = (name: string, children: VaultTreeNode[]): VaultTreeNode => ({
   path: name,
   kind: 'folder',
   children,
+})
+
+const vaultNote = (path: string, title?: string): VaultNote => ({
+  path,
+  slug: path,
+  basename: path,
+  title: title ?? path,
+  frontmatter: {},
+  body: '',
+  headings: [],
+  links: [],
+  tags: [],
 })
 
 describe('countNotes', () => {
@@ -64,5 +77,61 @@ describe('areaAnchorId', () => {
 
   test('replaces runs of non-alphanumeric characters with a single hyphen', () => {
     expect(areaAnchorId('Wild Rift & Co.')).toBe('area-wild-rift-co-')
+  })
+})
+
+describe('groupByAreaAndSubArea', () => {
+  test('a note nested 3+ deep buckets under its second segment, not deeper', () => {
+    const bpc = vaultNote('wiki/health/peptides/bpc-157.md', 'BPC-157')
+    expect(groupByAreaAndSubArea([bpc])).toEqual([
+      { area: 'wiki', direct: [], subAreas: [{ name: 'health', notes: [bpc] }] },
+    ])
+  })
+
+  test('a note directly in an area folder lands in direct, not a sub-area', () => {
+    const foo = vaultNote('Inbox/foo.md', 'Foo')
+    expect(groupByAreaAndSubArea([foo])).toEqual([{ area: 'Inbox', direct: [foo], subAreas: [] }])
+  })
+
+  test('a root-level note (no slash) falls back to area Notes, no sub-area', () => {
+    const foo = vaultNote('foo.md', 'Foo')
+    expect(groupByAreaAndSubArea([foo])).toEqual([{ area: 'Notes', direct: [foo], subAreas: [] }])
+  })
+
+  test('areas, sub-areas, and notes within each are all sorted alphabetically (case-insensitive)', () => {
+    const zeta = vaultNote('wiki/health/zeta.md', 'Zeta')
+    const alpha = vaultNote('wiki/health/alpha.md', 'alpha')
+    const engineeringNote = vaultNote('wiki/engineering/one.md', 'One')
+    const gamingNote = vaultNote('Areas/gaming/foo.md', 'Foo')
+    const inboxNote = vaultNote('Inbox/note.md', 'Note')
+
+    const groups = groupByAreaAndSubArea([zeta, alpha, engineeringNote, gamingNote, inboxNote])
+
+    expect(groups.map((g) => g.area)).toEqual(['Areas', 'Inbox', 'wiki'])
+
+    const wiki = groups.find((g) => g.area === 'wiki')
+    expect(wiki?.subAreas.map((s) => s.name)).toEqual(['engineering', 'health'])
+
+    const health = wiki?.subAreas.find((s) => s.name === 'health')
+    expect(health?.notes.map((n) => n.title)).toEqual(['alpha', 'Zeta'])
+  })
+
+  test('direct notes and every sub-area note together equal the input length — nothing dropped', () => {
+    const notes = [
+      vaultNote('foo.md', 'Foo'),
+      vaultNote('Inbox/bar.md', 'Bar'),
+      vaultNote('Areas/Health/Blutbild.md', 'Blutbild'),
+      vaultNote('Areas/Health/Iron.md', 'Iron'),
+      vaultNote('wiki/health/peptides/bpc-157.md', 'BPC-157'),
+      vaultNote('wiki/engineering/basalt.md', 'basalt'),
+    ]
+
+    const groups = groupByAreaAndSubArea(notes)
+    const total = groups.reduce(
+      (sum, group) =>
+        sum + group.direct.length + group.subAreas.reduce((s, sa) => s + sa.notes.length, 0),
+      0,
+    )
+    expect(total).toBe(notes.length)
   })
 })

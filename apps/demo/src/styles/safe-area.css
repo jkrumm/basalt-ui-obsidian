@@ -48,9 +48,33 @@ footer.mantine-AppShell-footer {
 }
 
 /*
- * Mobile bottom action bar (routes/__root.tsx) — two direct actions (note tree, search) replacing
- * `BasaltShell`'s own built-in mobile nav, whose "Vault" tab opened a sheet with just the Home
- * link and whose "More" tab duplicated it via the full navbar overlay. Occupies the same 52px
+ * Delete the app-shell header entirely, at every breakpoint. Measured live: desktop's whole
+ * content was a `Vault / Home` breadcrumb the sidebar navbar (`sections` prop, `__root.tsx`)
+ * already shows, highlighted, 216px to the left; mobile's was only the back-button/title row this
+ * app portalled in (now removed, see `apps/demo/src/routes/$.tsx`). `BasaltShell` has no
+ * header prop — its height is hard-coded from the density scale — so this uses Mantine's own
+ * AppShell CSS variables, the same supported escape hatch `basalt-ui` itself uses for its
+ * `@media print` header suppression (`basalt-ui/src/styles.css`). Both variables, not just
+ * `display: none` on the element: `AppShellMain`'s `padding-top` reads `--app-shell-header-offset`,
+ * while `__root.tsx`'s sticky note-tree aside reads `--app-shell-header-height` for its `top` — left
+ * non-zero, either would keep reserving the header's old hard-coded height even with the header box
+ * itself invisible. `!important` for the same cascade reason documented at the top of
+ * `mobile-density.css`: these are `:root` variables Mantine injects from a `<style>` tag it renders
+ * inside `<body>`, later in the document than this file's own `<link rel="stylesheet">` in `<head>`.
+ */
+:root {
+  --app-shell-header-height: 0px !important;
+  --app-shell-header-offset: 0px !important;
+}
+
+header.mantine-AppShell-header {
+  display: none;
+}
+
+/*
+ * Mobile bottom action bar (routes/__root.tsx) — three direct actions (home, note tree, search)
+ * replacing `BasaltShell`'s own built-in mobile nav, whose "Vault" tab opened a sheet with just the
+ * Home link and whose "More" tab duplicated it via the full navbar overlay. Occupies the same 52px
  * footer slot `BasaltShell` already reserves (`footer={{ height: { base: 52, sm: 0 } }}`), so
  * `AppShell.Main`'s own bottom padding needs no change.
  */
@@ -107,6 +131,7 @@ footer.mantine-AppShell-footer {
   nav.mantine-AppShell-navbar button,
   nav.mantine-AppShell-navbar a,
   .mobile-shell-tabbar button,
+  .mobile-shell-tabbar a,
   [aria-label='Close navigation'],
   [aria-label='Open search'] {
     position: relative;
@@ -117,6 +142,7 @@ footer.mantine-AppShell-footer {
   nav.mantine-AppShell-navbar button::after,
   nav.mantine-AppShell-navbar a::after,
   .mobile-shell-tabbar button::after,
+  .mobile-shell-tabbar a::after,
   [aria-label='Close navigation']::after,
   [aria-label='Open search']::after {
     content: '';

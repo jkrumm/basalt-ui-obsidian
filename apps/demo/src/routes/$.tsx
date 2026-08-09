@@ -4,31 +4,12 @@
  * carry. `hrefFor` in `routes/__root.tsx` builds `/${note.slug}` verbatim to match this route.
  */
 import { useEffect } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ActionIcon, Group, Stack, Text, useMantineTheme } from '@mantine/core'
+import { createFileRoute } from '@tanstack/react-router'
+import { Stack, useMantineTheme } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { EmptyState, PageActions } from 'basalt-ui'
+import { EmptyState } from 'basalt-ui'
 import { Backlinks, NoteView, useVault } from 'basalt-ui-obsidian'
 import type { VaultNote } from 'obsidian-vault-core'
-
-/** Back-to-home affordance — mobile only, matches the shell's inline-glyph convention. */
-function IconBack() {
-  return (
-    <svg
-      width={18}
-      height={18}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M15 6l-6 6l6 6" />
-    </svg>
-  )
-}
 
 // The vault carries no language field, so `document.documentElement.lang` is inferred rather than
 // read from data: a cheap German/English heuristic over the title + body, not a real language
@@ -63,12 +44,10 @@ function NotePage() {
   const { _splat: slug } = Route.useParams()
   const { index } = useVault()
   const note = slug !== undefined ? index.bySlug.get(slug) : undefined
-  // `Stack.gap` (unlike AppShell's own `header.height`) has no responsive-object form at the type
-  // level — it's a bespoke component prop wired straight to a `--stack-gap` inline style, not one of
-  // `Box`'s generic `StyleProp<T>` style props (`p`/`m`/`w`/`h`/…, see `@mantine/core`'s
-  // `MantineStyleProps`). A JS breakpoint check is the plain, type-safe alternative — same pattern
-  // `NoteView`'s own mobile meta-header suppression already uses (`packages/basalt-ui-obsidian/src/
-  // render/note-view.tsx`); `max-width`, not `min-width`, so the test harness's constant
+  // `Stack.gap` has no responsive-object form at the type level — it's a bespoke component prop
+  // wired straight to a `--stack-gap` inline style, not one of `Box`'s generic `StyleProp<T>` style
+  // props (`p`/`m`/`w`/`h`/…, see `@mantine/core`'s `MantineStyleProps`). A JS breakpoint check is
+  // the plain, type-safe alternative; `max-width`, not `min-width`, so the test harness's constant
   // `matchMedia` stub (`matches: false`) resolves to "not mobile" and keeps today's desktop value.
   const theme = useMantineTheme()
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`, undefined, {
@@ -94,32 +73,11 @@ function NotePage() {
   }
 
   return (
-    // `xl` (26px) is a desktop-tuned gap — same measure between the header row/article and the
-    // article/backlinks section on a 393px phone, where every px of vertical space is scarcer.
-    // `lg` (20px) below `sm` keeps both gaps present (they still separate distinct regions) without
-    // the desktop's extra breathing room; desktop is untouched.
+    // `xl` (26px) is a desktop-tuned gap — same measure between the article and the backlinks
+    // section on a 393px phone, where every px of vertical space is scarcer. `lg` (20px) below `sm`
+    // keeps the gap present (the two still separate distinct regions) without the desktop's extra
+    // breathing room; desktop is untouched.
     <Stack gap={isMobile ? 'lg' : 'xl'}>
-      {/* Mobile only, both parts. The back affordance has no desktop counterpart (the tree is
-          always visible there), and on desktop `ArticleLayout`'s meta header still renders the
-          title — so leaving this row visible reintroduced the same duplicate title in reverse,
-          once top-right in the header and once as the article heading. */}
-      <PageActions>
-        <Group gap="xs" wrap="nowrap" hiddenFrom="sm" style={{ minWidth: 0 }}>
-          <ActionIcon
-            component={Link}
-            to="/"
-            hiddenFrom="sm"
-            variant="subtle"
-            size="lg"
-            aria-label="Back to vault home"
-          >
-            <IconBack />
-          </ActionIcon>
-          <Text fw={600} truncate style={{ minWidth: 0 }}>
-            {note.title}
-          </Text>
-        </Group>
-      </PageActions>
       <NoteView note={note} />
       <Backlinks path={note.path} />
     </Stack>

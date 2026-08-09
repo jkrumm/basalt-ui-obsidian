@@ -5,6 +5,9 @@
  */
 declare const classes: {
   readonly anchorReset: string
+  readonly tree: string
+  readonly item: string
+  readonly group: string
   readonly row: string
   readonly chevron: string
 }

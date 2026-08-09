@@ -1,12 +1,18 @@
 /**
- * VaultNav — recursive tree rendering, the folder-note convention, and expand/collapse
- * persistence. The fixture rebuilds a MINIMAL version of `obsidian-vault-core`'s own `buildTree`
- * (not exported from its public barrel) purely to shape a hand-built `VaultIndex.tree` — same
- * idiom as `obsidian-vault-core`'s own `tests/tree.test.ts`.
+ * VaultNav — WAI-ARIA tree structure (`role="treeitem"`/`role="group"`, `aria-level`,
+ * `aria-expanded`, `aria-selected`), roving tabindex, keyboard navigation, type-ahead, the
+ * folder-note convention, and expand/collapse persistence. The fixture rebuilds a MINIMAL version
+ * of `obsidian-vault-core`'s own `buildTree` (not exported from its public barrel) purely to shape
+ * a hand-built `VaultIndex.tree` — same idiom as `obsidian-vault-core`'s own `tests/tree.test.ts`.
+ *
+ * The chevron is `aria-hidden` and not a button (see `vault-nav.tsx`'s module doc), so tests that
+ * need to click it locate it by its literal glyph text (`▸`) inside the folder's treeitem, via
+ * `within` — `getByText` operates on DOM content, not the accessibility tree, so `aria-hidden`
+ * doesn't hide it from that query.
  */
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { MantineProvider } from '@mantine/core'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import type { VaultIndex, VaultNote, VaultTreeNode } from 'obsidian-vault-core'
 import { VaultProvider } from '../src/context.js'
 import { VaultNav } from '../src/nav/vault-nav.js'
@@ -65,7 +71,12 @@ function buildTree(notes: readonly VaultNote[]): VaultTreeNode {
     children: [
       ...[...folder.folders.values()].map(toNode),
       ...folder.notes.map(
-        (n): VaultTreeNode => ({ name: n.basename, path: n.path, kind: 'note', note: n }),
+        (n): VaultTreeNode => ({
+          name: n.basename,
+          path: n.path,
+          kind: 'note',
+          note: n,
+        }),
       ),
     ],
   })
@@ -105,11 +116,31 @@ function renderNav(props: { activePath?: string; storageKey: string }) {
   )
 }
 
+/** Clicks the folder's chevron (mouse path), scoped to its treeitem so this can't accidentally hit
+ * a same-glyph chevron belonging to a different folder. */
+function clickChevron(name: string) {
+  const row = screen.getByRole('treeitem', { name })
+  fireEvent.click(within(row).getByText('▸'))
+}
+
+/** `element.focus()` triggers VaultNav's own `onFocus` state update (`focusedPath`). Called as a
+ * raw DOM API (not through `fireEvent`, which auto-wraps in `act()`), it needs its own `act()` so
+ * that update is flushed before the next synchronous line — otherwise a following
+ * `fireEvent.keyDown` reads the roving-tabindex handler closure from the PRE-focus render. */
+function focusItem(el: HTMLElement) {
+  act(() => {
+    el.focus()
+  })
+}
+
 describe('VaultNav', () => {
   beforeEach(() => localStorage.clear())
 
   test('renders four levels of nesting when the active path is deep', () => {
-    renderNav({ activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md', storageKey: 'nav-a' })
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-a',
+    })
 
     // Areas (1) -> Gaming (2) -> Wild Rift folder (3) -> Wild Rift/Runes notes (4)
     expect(screen.getByText('Areas')).toBeDefined()
@@ -121,7 +152,10 @@ describe('VaultNav', () => {
   })
 
   test('a folder note makes its folder row navigable, not a dead label', () => {
-    renderNav({ activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md', storageKey: 'nav-b' })
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-b',
+    })
 
     const link = screen.getByRole('link', { name: 'Wild Rift' })
     // Per-segment percent-encoding, `/` separators intact. Obsidian filenames legally contain `#`,
@@ -141,7 +175,10 @@ describe('VaultNav', () => {
   })
 
   test('a folder without a folder note is a toggle-only label, not a link', () => {
-    renderNav({ activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md', storageKey: 'nav-c' })
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-c',
+    })
 
     expect(screen.queryByRole('link', { name: 'Areas' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Gaming' })).toBeNull()
@@ -157,13 +194,13 @@ describe('VaultNav', () => {
   test('clicking the chevron expands a collapsed folder', () => {
     renderNav({ storageKey: 'nav-e' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand Areas' }))
+    clickChevron('Areas')
     expect(screen.getByText('Gaming')).toBeDefined()
   })
 
   test('expanded state persists across remounts under the same storageKey', () => {
     const { unmount } = renderNav({ storageKey: 'nav-persist' })
-    fireEvent.click(screen.getByRole('button', { name: 'Expand Areas' }))
+    clickChevron('Areas')
     expect(screen.getByText('Gaming')).toBeDefined()
     unmount()
 
@@ -181,7 +218,10 @@ describe('VaultNav', () => {
   })
 
   test('the active row carries a data-active marker; an inactive row does not', () => {
-    renderNav({ activePath: 'Areas/Reading.md', storageKey: 'nav-active-marker' })
+    renderNav({
+      activePath: 'Areas/Reading.md',
+      storageKey: 'nav-active-marker',
+    })
 
     const activeRow = screen.getByText('Reading').closest('[data-active]')
     expect(activeRow?.getAttribute('data-active')).toBe('true')
@@ -219,7 +259,176 @@ describe('VaultNav', () => {
       </MantineProvider>,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand Areas' }))
+    clickChevron('Areas')
     expect(calls).toBe(0)
+  })
+
+  test('renders a real tree: role="treeitem"/"group" exist, with exact counts for the fixture', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-counts-deep',
+    })
+
+    // Areas, Gaming, League, Wild Rift (folder), Runes, Reading, Inbox — every ancestor of the
+    // active path is expanded, so all seven fixture rows are visible.
+    expect(screen.getAllByRole('treeitem')).toHaveLength(7)
+    // One group per expanded folder with children: Areas, Gaming, Wild Rift.
+    expect(screen.getAllByRole('group')).toHaveLength(3)
+  })
+
+  test('a collapsed-by-default tree renders only the top-level treeitems and no groups', () => {
+    renderNav({ storageKey: 'nav-counts-collapsed' })
+
+    expect(screen.getAllByRole('treeitem')).toHaveLength(2) // Areas, Inbox
+    expect(screen.queryAllByRole('group')).toHaveLength(0)
+  })
+
+  test('aria-level matches nesting depth', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-level',
+    })
+
+    expect(screen.getByRole('treeitem', { name: 'Areas' }).getAttribute('aria-level')).toBe('1')
+    expect(screen.getByRole('treeitem', { name: 'Inbox' }).getAttribute('aria-level')).toBe('1')
+    expect(screen.getByRole('treeitem', { name: 'Gaming' }).getAttribute('aria-level')).toBe('2')
+    expect(screen.getByRole('treeitem', { name: 'Reading' }).getAttribute('aria-level')).toBe('2')
+    expect(
+      screen.getByRole('treeitem', { name: 'League of Legends' }).getAttribute('aria-level'),
+    ).toBe('3')
+    expect(screen.getByRole('treeitem', { name: 'Wild Rift' }).getAttribute('aria-level')).toBe('3')
+    expect(screen.getByRole('treeitem', { name: 'Runes' }).getAttribute('aria-level')).toBe('4')
+  })
+
+  test('aria-expanded is present on folders and absent on notes', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-expanded-attr',
+    })
+
+    for (const name of ['Areas', 'Gaming', 'Wild Rift']) {
+      expect(screen.getByRole('treeitem', { name }).hasAttribute('aria-expanded')).toBe(true)
+    }
+    for (const name of ['League of Legends', 'Runes', 'Reading', 'Inbox']) {
+      expect(screen.getByRole('treeitem', { name }).hasAttribute('aria-expanded')).toBe(false)
+    }
+  })
+
+  test('aria-selected="true" appears exactly once, on the row matching activePath', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-selected',
+    })
+
+    const selected = screen
+      .getAllByRole('treeitem')
+      .filter((el) => el.getAttribute('aria-selected') === 'true')
+    expect(selected).toHaveLength(1)
+    expect(selected[0]).toBe(screen.getByRole('treeitem', { name: 'Wild Rift' }))
+  })
+
+  test('exactly one treeitem is tabbable at a time, defaulting to the active row', () => {
+    renderNav({ activePath: 'Areas/Reading.md', storageKey: 'nav-tabindex' })
+
+    const tabbable = document.querySelectorAll('[role="treeitem"][tabindex="0"]')
+    expect(tabbable).toHaveLength(1)
+    expect(tabbable[0]).toBe(screen.getByRole('treeitem', { name: 'Reading' }))
+  })
+
+  test('ArrowDown moves focus to the next visible node', () => {
+    renderNav({ storageKey: 'nav-arrowdown' })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    focusItem(areas)
+    fireEvent.keyDown(areas, { key: 'ArrowDown' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
+  })
+
+  test("ArrowDown from a DEEP row steps to its real neighbour, not the top folder's", () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-deep-down',
+    })
+
+    // `Runes` is four levels down, so its `<li>` is nested inside the `<li>`s for `Wild Rift`,
+    // `Gaming` and `Areas`. `onFocus` is React's binding for `focusin`, which BUBBLES: without a
+    // target check each of those ancestors also reports itself as focused, outermost last, so the
+    // tree believes focus is on `Areas` and ArrowDown walks from there. Measured live before the
+    // fix: every ArrowDown, from any starting row at any depth, landed on `Engineering` — the node
+    // right after `Areas`.
+    const runes = screen.getByRole('treeitem', { name: 'Runes' })
+    focusItem(runes)
+    fireEvent.keyDown(runes, { key: 'ArrowDown' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'League of Legends' }))
+  })
+
+  test('ArrowUp moves focus to the previous visible node', () => {
+    renderNav({ storageKey: 'nav-arrowup' })
+
+    const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
+    focusItem(inbox)
+    fireEvent.keyDown(inbox, { key: 'ArrowUp' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Areas' }))
+  })
+
+  test('ArrowRight expands a collapsed folder', () => {
+    renderNav({ storageKey: 'nav-arrowright' })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    focusItem(areas)
+    fireEvent.keyDown(areas, { key: 'ArrowRight' })
+
+    expect(screen.getByText('Gaming')).toBeDefined()
+  })
+
+  test('ArrowLeft collapses an expanded folder', () => {
+    renderNav({ storageKey: 'nav-arrowleft' })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    focusItem(areas)
+    fireEvent.keyDown(areas, { key: 'ArrowRight' })
+    expect(screen.getByText('Gaming')).toBeDefined()
+
+    fireEvent.keyDown(areas, { key: 'ArrowLeft' })
+    expect(screen.queryByText('Gaming')).toBeNull()
+  })
+
+  test('Home jumps to the first visible node', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-home',
+    })
+
+    const runes = screen.getByRole('treeitem', { name: 'Runes' })
+    focusItem(runes)
+    fireEvent.keyDown(runes, { key: 'Home' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Areas' }))
+  })
+
+  test('End jumps to the last visible node', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-end',
+    })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    focusItem(areas)
+    fireEvent.keyDown(areas, { key: 'End' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
+  })
+
+  test('type-ahead focuses the first visible node whose name starts with the typed character', () => {
+    renderNav({ storageKey: 'nav-typeahead' })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    focusItem(areas)
+    fireEvent.keyDown(areas, { key: 'i' })
+
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
   })
 })
