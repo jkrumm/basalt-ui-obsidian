@@ -76,7 +76,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FocusEvent, KeyboardEvent } from 'react'
 import { Text } from '@mantine/core'
 import { useLocalStorage, useReducedMotion } from '@mantine/hooks'
-import { VX } from 'basalt-ui/tokens'
+import { alpha, VX } from 'basalt-ui/tokens'
 import { foldDiacritics } from 'obsidian-vault-core/search'
 import type { VaultNote, VaultTreeNode } from 'obsidian-vault-core'
 import type { VaultIconRenderer } from '../context.js'
@@ -206,26 +206,43 @@ type RowLabelProps = {
   readonly label: string
   readonly color: string
   readonly weight: number
+  /** Marks the row as navigable in its own right — see the underline note below. */
+  readonly underline?: boolean
 }
 
 /**
  * The text this file owns inside a row — also the element `aria-labelledby` points at (`id`),
  * since the seam that renders the actual `<a>` (`renderLink`) is consumer-owned and can't take an
- * `id` prop directly (see the module doc's "known seam limitation"). `textDecoration: 'none'` set
- * HERE (not on an ancestor) is deliberate: a descendant that specifies its own
- * `text-decoration-line` stops the anchor's underline from painting through it, regardless of the
- * anchor's own computed value — the same belt to `vault-nav.module.css`'s suspenders. `flex: 1`
- * lets this component also serve as the flex item directly (the toggle-only folder-label case,
- * which has no wrapping wrapper of its own).
+ * `id` prop directly (see the module doc's "known seam limitation"). The `text-decoration-line` is
+ * always set HERE, never left to an ancestor: a descendant that specifies its own value stops the
+ * anchor's underline from painting through it regardless of the anchor's computed value — the same
+ * belt to `vault-nav.module.css`'s suspenders. `flex: 1` lets this component also serve as the flex
+ * item directly (the toggle-only folder-label case, which has no wrapping wrapper of its own).
+ *
+ * `underline` is that decision made deliberately rather than inherited. Obsidian's own explorer
+ * underlines exactly those folders that have a folder note, because those rows do two different
+ * things — the chevron expands, the label navigates — and nothing else in the row distinguishes
+ * them from a folder that only expands. The underline is drawn in the label's own resolved color at
+ * 25% alpha rather than the browser default, which lands on the text at full strength and reads as
+ * a link in a body of prose instead of a quiet affordance in a dense tree.
  */
-function RowLabel({ id, label, color, weight }: RowLabelProps) {
+function RowLabel({ id, label, color, weight, underline = false }: RowLabelProps) {
   return (
     <Text
       id={id}
       size="sm"
       fw={weight}
       truncate="end"
-      style={{ color, textDecoration: 'none', minWidth: 0, flex: 1 }}
+      style={{
+        color,
+        textDecoration: underline ? 'underline' : 'none',
+        ...(underline && {
+          textDecorationColor: alpha(color, 0.25),
+          textUnderlineOffset: 2,
+        }),
+        minWidth: 0,
+        flex: 1,
+      }}
     >
       {label}
     </Text>
@@ -394,7 +411,7 @@ function VaultNavRow({
           >
             {renderLink(
               hrefFor(folderNote),
-              <RowLabel id={labelId} label={node.name} color={color} weight={600} />,
+              <RowLabel id={labelId} label={node.name} color={color} weight={600} underline />,
             )}
           </div>
         ) : (
