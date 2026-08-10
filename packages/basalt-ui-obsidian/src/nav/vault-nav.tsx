@@ -376,7 +376,8 @@ function VaultNavRow({
             onToggle(node.path)
           }}
           style={{
-            color: VX.faint,
+            color: VX.muted,
+            fontSize: VX.text.md,
             display: 'inline-block',
             transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
             transition: 'transform 120ms ease',

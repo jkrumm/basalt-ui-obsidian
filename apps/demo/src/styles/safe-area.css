@@ -33,6 +33,18 @@ body {
 }
 
 /*
+ * The drawer's `padding={0}` (routes/__root.tsx) exists for the BODY — the tree supplies its own
+ * `p="sm"` and a doubled inset wastes phone width — but Mantine feeds that one prop to the header
+ * too, which left the "Notes" title and its close button flush against the screen edges. Restore
+ * the header's own inset here, safe-area included, instead of raising `padding` and re-indenting
+ * the tree.
+ */
+.vault-nav-drawer-header {
+  padding: var(--mantine-spacing-sm) calc(var(--mantine-spacing-md) + env(safe-area-inset-right, 0px))
+    var(--mantine-spacing-sm) calc(var(--mantine-spacing-md) + env(safe-area-inset-left, 0px));
+}
+
+/*
  * `BasaltShell`'s own fixed chrome (header, navbar, footer) lays out against the viewport, not
  * `body` — an ancestor's padding (the `body` rule above) never reaches a `position: fixed`
  * descendant, so each needs its own inset. Additive on top of the shell's existing fixed
@@ -41,10 +53,6 @@ body {
 header.mantine-AppShell-header,
 nav.mantine-AppShell-navbar {
   padding-top: env(safe-area-inset-top, 0px);
-}
-
-footer.mantine-AppShell-footer {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /*
@@ -109,9 +117,24 @@ header.mantine-AppShell-header {
   font-weight: 500;
 }
 
-/* The vendored bar this replaces (see `.mobile-shell-tabbar` above) — its "Vault"/"More" tabs
- * never reached the actual note tree, so it's fully superseded rather than shown alongside it. */
-.mantine-AppShell-footer nav {
+/*
+ * The vendored bar this replaces (see `.mobile-shell-tabbar` above) — its "Vault"/"More" tabs never
+ * reached the actual note tree, so it's fully superseded rather than shown alongside it.
+ *
+ * Hiding the FOOTER, not just the `nav` inside it. Hiding only the nav left the footer element
+ * itself in the layout: same `position: fixed`, same bottom inset, the same `z-index: 100`, an
+ * opaque `--mantine-color-body` background, and later in the DOM than the tab bar — so it painted
+ * a blank 52px band straight over `.mobile-shell-tabbar` and swallowed every tap. Measured live:
+ * both boxes resolved to the identical rect, and `elementFromPoint` over the "Vault" tab returned
+ * the footer. The phone had no route to the note tree at all.
+ *
+ * `--app-shell-footer-offset` is deliberately NOT zeroed the way the header block above zeroes its
+ * two variables: `AppShell.Main`'s bottom padding reads that offset, and the tab bar genuinely
+ * occupies those 52px. The header is deleted; the footer is only re-skinned, so its reserved space
+ * has to survive. Its safe-area inset moves with it — `.mobile-shell-tabbar` carries its own
+ * `padding-bottom: env(safe-area-inset-bottom)` above.
+ */
+footer.mantine-AppShell-footer {
   display: none;
 }
 

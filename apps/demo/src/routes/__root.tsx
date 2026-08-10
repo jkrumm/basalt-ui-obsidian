@@ -4,9 +4,10 @@
  * (app chrome).
  *
  * `BasaltShell`'s own `sections` prop only takes flat href items (app-level chrome nav), not an
- * arbitrary tree — so the actual note tree (`VaultNav`) renders as a content-level nav column here
- * instead, alongside the routed page (`<Outlet />`). `sections` carries just a "Home" destination
- * back to the index route.
+ * arbitrary tree — so the actual note tree (`VaultNav`) renders through `sidebarNavExtra` instead,
+ * the SAME sidebar column `sections` renders into (appended after them, inside its nav
+ * `ScrollArea`). `sections` still carries a "Home" destination above the tree — see the comment on
+ * `sections` below for why that entry earns its place rather than collapsing to `sections={[]}`.
  */
 import {
   Box,
@@ -24,7 +25,6 @@ import { useEffect } from 'react'
 import type { NavLinkRenderer, SidebarSection } from 'basalt-ui'
 import { BasaltShell, EmptyState } from 'basalt-ui'
 import { useBasaltNav } from 'basalt-ui/router-tanstack'
-import { VX } from 'basalt-ui/tokens'
 import { VaultNav, VaultProvider, encodeSlugPath } from 'basalt-ui-obsidian'
 import type { VaultHrefResolver, VaultLinkRenderer } from 'basalt-ui-obsidian'
 import { useVaultIndexQuery } from '../lib/vault-data'
@@ -144,6 +144,11 @@ function RootLayout() {
     closeDrawer()
   }, [currentPath, closeDrawer])
 
+  // Kept, not collapsed to `sections={[]}`: `VaultNav` renders `index.tree.children` only — there
+  // is no root-level row in the tree itself that links back to `/`, so this is still the sole way
+  // back to the index route. It now sits directly above the tree in the same sidebar column
+  // (the section-spacing rule puts one divider between them), which is the same brand/search/
+  // home/tree order Obsidian's own sidebar uses.
   const sections: SidebarSection[] = [
     {
       label: 'Vault',
@@ -188,42 +193,22 @@ function RootLayout() {
         sections={sections}
         renderNavLink={renderNavLink}
         search={{ onOpen: openVaultSearch }}
+        sidebarNavExtra={<VaultNav {...(activePath !== undefined && { activePath })} />}
       >
-        {/* `sm` (48em) is `BasaltShell`'s own navbar breakpoint (`shell/index.tsx`'s
-            `navbar={{ breakpoint: 'sm' }}`) — matched here rather than a new one, so the tree
-            column and the shell's own rail collapse at the same viewport width.
-            No explicit height/overflow on this row: both children now stay in NORMAL page flow and
-            the page itself scrolls (via `AppShell.Main`), which is what lets `position: sticky`
-            below (and `ArticleLayout`'s own sticky TOC rail, several ancestors down inside
-            `<Outlet />`) actually pick up scroll range against the viewport. A bounded,
-            internally-scrolling column looked right on paper but its height never reliably tracked
-            `100dvh` across `AppShell`'s breakpoints, leaving the aside `position: static` with a
-            dead multi-thousand-pixel tail once the page outgrew it — and the same bounded
-            `overflow: auto` on the content column starved the TOC's sticky ancestor of any actual
-            scroll range. */}
-        <Group align="flex-start" wrap="nowrap" gap={0}>
-          <Box
-            component="aside"
-            visibleFrom="sm"
-            w={280}
-            style={{
-              borderRight: `1px solid ${VX.surface.hairline}`,
-              flexShrink: 0,
-              position: 'sticky',
-              top: 'var(--app-shell-header-height, 0px)',
-              maxHeight: 'calc(100dvh - var(--app-shell-header-height, 0px))',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <ScrollArea style={{ flex: 1, minHeight: 0 }} p="sm">
-              <VaultNav {...(activePath !== undefined && { activePath })} />
-            </ScrollArea>
-          </Box>
-          <Box flex={1} style={{ minWidth: 0 }} p="md">
-            <Outlet />
-          </Box>
-        </Group>
+        {/* The note tree used to render as a second, content-level nav column (its own `<aside>`,
+            beside `<Outlet />`) — now it's `sidebarNavExtra` on `BasaltShell` instead, appended
+            after `sections` inside the SHELL's own nav `ScrollArea` (see that prop's JSDoc in
+            `basalt-ui/shell`). That scroll region is entirely the sidebar's: bounded to the
+            sidebar's own height, independent of this content column. It was never involved in the
+            page-level scrolling below, so removing the old aside changes nothing about it.
+            `<Outlet />` was always in normal page flow with no height/overflow of its own — that's
+            what lets `position: sticky` on `ArticleLayout`'s TOC rail, several ancestors down, pick
+            up scroll range against the viewport. Still true with the aside gone; verified against
+            `article-layout.module.css`, whose `.tocRail` sticks off the same document scroll this
+            `<Box>` has always deferred to. */}
+        <Box p="md">
+          <Outlet />
+        </Box>
         <Drawer
           opened={drawerOpened}
           onClose={closeDrawer}
@@ -231,14 +216,19 @@ function RootLayout() {
           size={280}
           padding={0}
           title="Notes"
-          classNames={{ body: 'vault-nav-drawer-body' }}
+          // `padding={0}` is for the BODY — the tree brings its own `p="sm"` below and a doubled
+          // inset wastes scarce phone width. But Mantine's `padding` prop feeds the header too,
+          // which left the "Notes" title and its close button flush against the screen edges. The
+          // header gets its inset back through its own class rather than by raising `padding`.
+          classNames={{ body: 'vault-nav-drawer-body', header: 'vault-nav-drawer-header' }}
         >
           <ScrollArea h="100%" p="sm">
             <VaultNav {...(activePath !== undefined && { activePath })} onNavigate={closeDrawer} />
           </ScrollArea>
         </Drawer>
-        {/* Mobile bottom action bar: replaces `BasaltShell`'s own built-in mobile nav (hidden via
-            `.mantine-AppShell-footer nav { display: none }` in `styles/safe-area.css`), whose
+        {/* Mobile bottom action bar: replaces `BasaltShell`'s own built-in mobile nav (the whole
+            `footer.mantine-AppShell-footer` is hidden in `styles/safe-area.css` — hiding only the
+            `nav` inside it left an opaque fixed box painting over this bar), whose
             "Vault" tab opened a sheet containing only the Home link and whose "More" tab duplicated
             it via the full navbar overlay — neither surfaced the actual note tree. Three direct
             actions instead: home (the app-shell header this app deletes at every breakpoint,

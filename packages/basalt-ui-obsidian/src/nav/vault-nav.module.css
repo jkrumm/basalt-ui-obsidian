@@ -76,8 +76,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
-  padding: 6px 8px;
+  min-height: 26px;
+  padding: 3px 8px;
   border-radius: var(--vx-radius-tight);
   cursor: pointer;
   background-color: transparent;
