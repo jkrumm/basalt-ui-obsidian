@@ -46,9 +46,9 @@
  * a layered one per the CSS cascade spec, independent of specificity.
  *
  * `.row`/`.chevron` hold what inline styles can't express: `:hover`, the indent-guide/hover-ink
- * custom properties, and the `(pointer: coarse)` media query. Measured mobile row heights were
- * 41.5-45.2px; both are floored at the WCAG 2.5.8 minimum target size on a touch device — untouched
- * by the chrome pass's `.row` height reduction below, which only affects the FINE-pointer height.
+ * custom properties, and the `(pointer: coarse)` media query. Rows are 24px on a fine pointer and
+ * 32px on a coarse one — see the touch-sizing note on that media query below for why 32 and not the
+ * 44 this used to carry.
  * The `.chevron` box is reused, empty and un-clickable, as the notes' alignment spacer too — same
  * width at every breakpoint, no second exported class.
  */
@@ -110,14 +110,31 @@
   --vault-nav-hover-ink: var(--vx-ink);
 }
 
+/*
+ * The active row is a NEUTRAL fill, not an accent tint with a 3px accent bar down its edge. In a
+ * sidebar the selected row is a position marker, not a call to action — it competes with the note
+ * body for attention every time it is on screen, and an accent-coloured slab plus a rule wins that
+ * competition far too loudly for something that is simply "where you are". Obsidian, VS Code and
+ * GitHub Primer all mark it with a plain raised surface, and this matches them: the same ink tint
+ * as `:hover` a step stronger, so the two states are obviously the same family, and the label
+ * carries the rest of the signal by resolving to full `--vx-ink`.
+ */
 .row[data-active='true'] {
-  background-color: color-mix(in srgb, var(--vx-accent) 12%, transparent);
-  box-shadow: inset 3px 0 0 var(--vx-accent);
+  background-color: color-mix(in srgb, var(--vx-ink) 11%, transparent);
 }
 
+/*
+ * Touch rows are 32px, not the 44px this used to carry. 44×44 is WCAG 2.5.5 Target Size (Enhanced),
+ * which is Level AAA; the Level AA requirement is 2.5.8 Target Size (Minimum) at 24×24 CSS px, which
+ * a full-width 32px row clears with room to spare on both axes. The 44px version made the phone
+ * drawer show barely a dozen rows of a 106-note vault — for a nav tree whose whole job is letting
+ * you see where you are in a hierarchy, that traded the feature away for a level nothing here
+ * targets. The chevron keeps a deliberately larger hit box than its 16px glyph (below) so the
+ * expand/collapse target does not shrink with the row.
+ */
 @media (pointer: coarse) {
   .row {
-    min-height: 44px;
+    min-height: 32px;
   }
 }
 
@@ -131,9 +148,15 @@
   cursor: pointer;
 }
 
+/*
+ * Wider and taller than the row it sits in, on touch only: the chevron and the label do two
+ * different things in the same row (toggle vs navigate), so a mis-tap on a folder is not a no-op —
+ * it navigates when you meant to expand. Keeping this box at 28×32 against a 16px glyph holds the
+ * separation comfortably clear of 2.5.8's 24×24 even though the row itself came down to 32px.
+ */
 @media (pointer: coarse) {
   .chevron {
-    width: 32px;
-    height: 44px;
+    width: 28px;
+    height: 32px;
   }
 }
