@@ -6,6 +6,7 @@
  * that only needs vault reading doesn't pull in unified/MiniSearch types.
  */
 export { readVault } from './vault-reader.js'
+export { readBookmarks } from './bookmarks.js'
 export { resolveLinkPath } from './links.js'
 export { slugify } from './slug.js'
 export { collectSortingSpecs, parseSortingSpec, readFolderIcons } from './nav-config.js'
@@ -13,6 +14,7 @@ export { collectSortingSpecs, parseSortingSpec, readFolderIcons } from './nav-co
 export type {
   ReadVaultOptions,
   VaultBacklink,
+  VaultBookmark,
   VaultHeading,
   VaultIndex,
   VaultLink,

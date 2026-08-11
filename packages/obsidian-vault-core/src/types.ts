@@ -47,7 +47,46 @@ export type VaultNote = {
   readonly links: readonly VaultLink[]
   /** Normalized `frontmatter.tags` — always a string array, regardless of the source YAML shape. */
   readonly tags: readonly string[]
+  /**
+   * Filesystem `mtime` (epoch milliseconds, rounded to an integer) of the note's file on disk —
+   * NOT a frontmatter date. Reflects *file* recency (a reformat or a vault-sync touch bumps it),
+   * not editorial recency.
+   */
+  readonly mtime: number
 }
+
+/**
+ * One entry from Obsidian's own `.obsidian/bookmarks.json`, read by {@link readBookmarks}. `title`
+ * is present only when the user renamed the bookmark away from its default label; `ctime` is when
+ * the bookmark itself was created, not the target's own timestamps. `group` nests arbitrarily —
+ * Obsidian lets a group contain another group.
+ */
+export type VaultBookmark =
+  | {
+      readonly type: 'file'
+      readonly path: string
+      readonly subpath?: string
+      readonly title?: string
+      readonly ctime?: number
+    }
+  | {
+      readonly type: 'folder'
+      readonly path: string
+      readonly title?: string
+      readonly ctime?: number
+    }
+  | {
+      readonly type: 'search'
+      readonly query: string
+      readonly title?: string
+      readonly ctime?: number
+    }
+  | {
+      readonly type: 'group'
+      readonly title?: string
+      readonly ctime?: number
+      readonly items: readonly VaultBookmark[]
+    }
 
 /** One inbound link: some other note links to the note this backlink is attached to. */
 export type VaultBacklink = {
@@ -84,6 +123,8 @@ export type VaultIndex = {
   /** Tag -> vault-relative paths of the notes carrying it. */
   readonly tags: ReadonlyMap<string, readonly string[]>
   readonly tree: VaultTreeNode
+  /** Every entry from `.obsidian/bookmarks.json`, gated on `useObsidianPluginConfig` — see {@link readBookmarks}. */
+  readonly bookmarks: readonly VaultBookmark[]
 
   /**
    * Resolves a raw wikilink `target` (as written, `.md` optional) from the note at `fromPath`.
@@ -109,15 +150,17 @@ export type ReadVaultOptions = {
   readonly useObsidianIgnoreFilters?: boolean
   /**
    * When true (the default), honors every piece of Obsidian plugin config this package knows how
-   * to read: `.obsidian/plugins/obsidian-icon-folder/data.json` (per-path icons) and `sorting-spec`
+   * to read: `.obsidian/plugins/obsidian-icon-folder/data.json` (per-path icons), `sorting-spec`
    * frontmatter (explicit sibling order, scanned across every parsed note — see
-   * `collectSortingSpecs`), and — because a note can carry a `sorting-spec` while also being
+   * `collectSortingSpecs`), and `.obsidian/bookmarks.json` (the user's bookmark tree, see
+   * `readBookmarks`) — and, because a note can carry a `sorting-spec` while also being
    * individually excluded from `userIgnoreFilters` — every `.md` file is parsed regardless of
    * file-level ignores, with ignored ones then filtered back out of the public `notes`/`byPath`/
    * tree membership. `false` turns all of that off at once and restores the pre-plugin-config
-   * behavior exactly: no icons, no explicit order, and an individually-ignored file is pruned
-   * during the walk itself rather than parsed and filtered out afterward. A missing or malformed
-   * `data.json` is never an error either way — it just contributes no icons.
+   * behavior exactly: no icons, no explicit order, no bookmarks, and an individually-ignored file
+   * is pruned during the walk itself rather than parsed and filtered out afterward. A missing or
+   * malformed `data.json`/`bookmarks.json` is never an error either way — it just contributes
+   * nothing.
    */
   readonly useObsidianPluginConfig?: boolean
 }

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { fromVaultBundle, toVaultBundle } from '../src/search/bundle.js'
+import type { VaultBundle } from '../src/search/bundle.js'
 import type { VaultIndex, VaultNote } from '../src/types.js'
 
 function note(overrides: Partial<VaultNote> = {}): VaultNote {
@@ -14,6 +15,7 @@ function note(overrides: Partial<VaultNote> = {}): VaultNote {
     headings: [],
     links: [],
     tags: [],
+    mtime: 0,
     ...overrides,
   }
 }
@@ -39,6 +41,7 @@ describe('toVaultBundle / fromVaultBundle', () => {
       ]),
       backlinks: new Map([['b.md', [{ from: 'a.md', link: a.links[0]! }]]]),
       tags: new Map([['x', ['b.md']]]),
+      bookmarks: [{ type: 'file', path: 'a.md' }],
       tree: {
         name: '',
         path: '',
@@ -59,6 +62,40 @@ describe('toVaultBundle / fromVaultBundle', () => {
     expect([...rehydrated.backlinks.entries()]).toEqual([...original.backlinks.entries()])
     expect([...rehydrated.tags.entries()]).toEqual([...original.tags.entries()])
     expect(rehydrated.tree).toEqual(original.tree)
+    expect(rehydrated.bookmarks).toEqual(original.bookmarks)
+  })
+
+  test('a bundle from before version 2 (no bookmarks field) rehydrates with an empty bookmarks array', () => {
+    const a = note({ path: 'a.md', slug: 'a' })
+    // Simulates a stale `vault.json` precached by the demo app's service worker before this
+    // package added `bookmarks` to the bundle shape.
+    const staleBundle = {
+      version: 1,
+      notes: [a],
+      backlinks: {},
+      tags: {},
+      tree: { name: '', path: '', kind: 'folder' as const, children: [] },
+    }
+
+    const rehydrated = fromVaultBundle(staleBundle as unknown as VaultBundle)
+
+    expect(rehydrated.bookmarks).toEqual([])
+  })
+
+  test('a note with a missing mtime (pre-version-2 bundle) is backfilled to 0 on rehydration', () => {
+    const a = note({ path: 'a.md', slug: 'a', mtime: undefined as unknown as number })
+    const staleBundle = {
+      version: 1,
+      notes: [a],
+      backlinks: {},
+      tags: {},
+      tree: { name: '', path: '', kind: 'folder' as const, children: [] },
+    }
+
+    const rehydrated = fromVaultBundle(staleBundle as unknown as VaultBundle)
+
+    expect(rehydrated.notes[0]?.mtime).toBe(0)
+    expect(rehydrated.byPath.get('a.md')?.mtime).toBe(0)
   })
 
   test('a tree node icon survives the round trip', () => {
@@ -70,6 +107,7 @@ describe('toVaultBundle / fromVaultBundle', () => {
       bySlug: new Map([['a', a]]),
       backlinks: new Map(),
       tags: new Map(),
+      bookmarks: [],
       tree: {
         name: '',
         path: '',
@@ -95,6 +133,7 @@ describe('toVaultBundle / fromVaultBundle', () => {
       bySlug: new Map([['a', a]]),
       backlinks: new Map(),
       tags: new Map(),
+      bookmarks: [],
       tree: {
         name: '',
         path: '',
@@ -123,6 +162,7 @@ describe('toVaultBundle / fromVaultBundle', () => {
       bySlug: new Map(),
       backlinks: new Map(),
       tags: new Map(),
+      bookmarks: [],
       tree: { name: '', path: '', kind: 'folder', children: [] },
       resolve: () => undefined,
     }

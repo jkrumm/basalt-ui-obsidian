@@ -16,6 +16,7 @@ function note(path: string, title?: string): VaultNote {
     headings: [],
     links: [],
     tags: [],
+    mtime: 0,
   }
 }
 

@@ -14,9 +14,10 @@
  * collection, AND individually-ignored files pruned during the walk itself, exactly like before
  * this file grew plugin-config awareness.
  */
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { readBookmarks } from './bookmarks.js'
 import { normalizeTags, parseFrontmatter } from './frontmatter.js'
 import { extractHeadings } from './headings.js'
 import { createIgnoreMatcher, isHardSkippedDir, readObsidianIgnoreFilters } from './ignore.js'
@@ -69,9 +70,10 @@ type PendingNote = {
   readonly headings: VaultNote['headings']
   readonly rawLinks: readonly Omit<VaultLink, 'resolvedPath'>[]
   readonly tags: readonly string[]
+  readonly mtime: number
 }
 
-function toPendingNote(relPath: string, content: string): PendingNote {
+function toPendingNote(relPath: string, content: string, mtime: number): PendingNote {
   const { frontmatter, body } = parseFrontmatter(content)
   const lastSegment = relPath.slice(relPath.lastIndexOf('/') + 1)
   const basename = lastSegment.slice(0, -MD_EXTENSION_LENGTH)
@@ -88,6 +90,7 @@ function toPendingNote(relPath: string, content: string): PendingNote {
     headings: extractHeadings(body),
     rawLinks: extractLinks(body),
     tags: normalizeTags(frontmatter['tags']),
+    mtime,
   }
 }
 
@@ -98,13 +101,17 @@ export async function readVault(dir: string, options: ReadVaultOptions = {}): Pr
   const filters = [...(options.ignore ?? []), ...obsidianFilters]
   const isIgnored = createIgnoreMatcher(filters)
   const icons = useObsidianPluginConfig ? await readFolderIcons(dir) : new Map<string, string>()
+  const bookmarks = useObsidianPluginConfig ? await readBookmarks(dir) : []
 
   const relPaths = await collectMarkdownPaths(dir, isIgnored, !useObsidianPluginConfig)
 
   const allPending: PendingNote[] = []
   for (const relPath of relPaths) {
-    const content = await readFile(join(dir, relPath), 'utf8')
-    allPending.push(toPendingNote(relPath, content))
+    const absPath = join(dir, relPath)
+    // `mtimeMs` is fractional on macOS and lands straight in `vault.json` on every build — round it
+    // to an integer so an unchanged file produces a stable diff.
+    const [content, stats] = await Promise.all([readFile(absPath, 'utf8'), stat(absPath)])
+    allPending.push(toPendingNote(relPath, content, Math.round(stats.mtimeMs)))
   }
 
   // With plugin-config awareness on, `collectMarkdownPaths` above still collects individually
@@ -130,6 +137,7 @@ export async function readVault(dir: string, options: ReadVaultOptions = {}): Pr
       headings: note.headings,
       links,
       tags: note.tags,
+      mtime: note.mtime,
     }
   })
 
@@ -163,6 +171,7 @@ export async function readVault(dir: string, options: ReadVaultOptions = {}): Pr
     bySlug,
     backlinks,
     tags,
+    bookmarks,
     tree: buildTree(notes, {
       icons,
       order: useObsidianPluginConfig ? collectSortingSpecs(allPending) : new Map(),

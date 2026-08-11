@@ -17,6 +17,7 @@ function note(overrides: Partial<VaultNote> = {}): VaultNote {
     headings: [],
     links: [],
     tags: [],
+    mtime: 0,
     ...overrides,
   }
 }

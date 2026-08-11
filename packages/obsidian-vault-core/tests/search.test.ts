@@ -22,6 +22,7 @@ function note(overrides: Partial<VaultNote> = {}): VaultNote {
     headings: [],
     links: [],
     tags: ['health'],
+    mtime: 0,
     ...overrides,
   }
 }
@@ -34,6 +35,7 @@ function indexOf(notes: readonly VaultNote[]): VaultIndex {
     bySlug: new Map(notes.map((n) => [n.slug, n])),
     backlinks: new Map(),
     tags: new Map(),
+    bookmarks: [],
     tree: { name: '', path: '', kind: 'folder', children: [] },
     resolve: () => undefined,
   }

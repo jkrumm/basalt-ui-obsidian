@@ -44,6 +44,14 @@ describe('readVault', () => {
     expect(index.tags.get('a')).toEqual(['index.md'])
   })
 
+  test("populates mtime from the file's filesystem modification time on every note", async () => {
+    await writeNote(root, 'a.md', 'A')
+    const index = await readVault(root)
+    const mtime = index.byPath.get('a.md')?.mtime
+    expect(mtime).toBeGreaterThan(0)
+    expect(Number.isInteger(mtime)).toBe(true)
+  })
+
   test('title falls back to basename when frontmatter has none', async () => {
     await writeNote(root, 'plain.md', 'No frontmatter here.')
     const index = await readVault(root)
@@ -127,6 +135,27 @@ describe('readVault', () => {
       await mkdir(dir, { recursive: true })
       await writeFile(join(dir, 'data.json'), content, 'utf8')
     }
+
+    async function writeBookmarksJson(content: string): Promise<void> {
+      await mkdir(join(root, '.obsidian'), { recursive: true })
+      await writeFile(join(root, '.obsidian', 'bookmarks.json'), content, 'utf8')
+    }
+
+    test('readVault populates bookmarks from bookmarks.json', async () => {
+      await writeNote(root, 'a.md', 'A')
+      await writeBookmarksJson(JSON.stringify({ items: [{ type: 'file', path: 'a.md' }] }))
+
+      const index = await readVault(root)
+      expect(index.bookmarks).toEqual([{ type: 'file', path: 'a.md' }])
+    })
+
+    test('useObsidianPluginConfig: false skips bookmarks.json entirely', async () => {
+      await writeNote(root, 'a.md', 'A')
+      await writeBookmarksJson(JSON.stringify({ items: [{ type: 'file', path: 'a.md' }] }))
+
+      const index = await readVault(root, { useObsidianPluginConfig: false })
+      expect(index.bookmarks).toEqual([])
+    })
 
     test('an individually-ignored note stays out of the public index but still reorders siblings', async () => {
       await writeNote(
