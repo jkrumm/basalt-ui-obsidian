@@ -1,90 +1,157 @@
 /**
- * VaultNav — a real WAI-ARIA tree over `VaultIndex.tree`. `AppSidebar`'s `SidebarItem.children`
- * (basalt-ui/shell) is one level deep, rendered as a hover popover — a vault nests arbitrarily
- * deep, so this component owns its own `role="tree"` widget instead of projecting into
- * `SidebarItem`.
+ * VaultNav — a real WAI-ARIA tree over `VaultIndex.tree`, built on `@mantine/core`'s `Tree`/
+ * `useTree`. `AppSidebar`'s `SidebarItem.children` (basalt-ui/shell) is one level deep, rendered as
+ * a hover popover — a vault nests arbitrarily deep, so this component owns its own `role="tree"`
+ * widget instead of projecting into `SidebarItem`.
  *
- * DOM shape follows the pattern GitHub Primer's `TreeView` and VS Code both use — a native
- * `<ul role="tree">` / `<li role="treeitem">` / `<ul role="group">` tree, NOT the flat
- * `role="tree"`-on-a-`<div>`-full-of-`<div>`s this file used to render (which carried the role
- * with nothing under it for a screen reader to navigate). Mantine's own `Tree`/`useTree` was
- * deliberately NOT adopted: its roving tabindex owns the `<li>` and its `selectOnClick` model owns
- * selection state, while this component's selection is DERIVED from `activePath`, not held — the
- * two ownership models collide.
+ * A prior version of this file hand-rolled the whole tree (traversal, roving tabindex, arrow-key
+ * handling, type-ahead) because Mantine's `Tree` only grew CONTROLLED `expandedState`/`selectedState`
+ * in v9 — before that, `useTree`'s state was fully internal and had nowhere for this component's own
+ * `activePath`-derived selection to plug in. That's no longer true (verified against the installed
+ * `@mantine/core@9.3.2`): `useTree({ expandedState, onExpandedStateChange, selectedState })` runs on
+ * `useUncontrolled`, so both are fully controllable from outside. Selection here is still DERIVED,
+ * never held — `selectedState` is computed from `activePath` every render and `select`/
+ * `toggleSelected` are never called (`selectOnClick={false}`, `allowRangeSelection={false}`, and this
+ * file's own click handlers never touch the controller's selection API either).
  *
- * Roving tabindex: exactly one `<li role="treeitem">` carries `tabIndex={0}` at a time (every
- * other is `-1`) — `tabbablePath` below, preferring the keyboard-focused node, else the node
- * matching `activePath`, else the first visible node. Every arrow/Home/End/type-ahead handler moves
- * focus imperatively via `focusNode` (which just calls `.focus()` on the target `<li>` through
- * `itemRefs`) and lets the row's own `onFocus` record where focus landed — no separate "what's
- * current" bookkeeping. That landing is recorded in BOTH a `focusedPath` state (for rendering
- * `tabIndex`) and a `focusedPathRef` (for the handlers to read synchronously); see `handleRowFocus`
- * for why one of the two is not enough.
+ * `data` maps `VaultIndex.tree` to Mantine's `TreeNodeData[]` (`{ value, label, children }`),
+ * `value` always a vault-relative path. `buildTreeNodeData` does this once (`useMemo`, keyed on
+ * `index.tree`) and populates four parallel lookup maps keyed by that same path — `nodesByPath` (the
+ * original `VaultTreeNode`, since `TreeNodeData` can't carry it), `namesByPath` (display name, for
+ * type-ahead), `hasChildrenByPath` (a folder's visible-children count, for the Enter/Space
+ * toggle-if-folder guard below) and `selectableValueByPath` (a note's OWN path -> its row's `value` —
+ * identity for a plain note, but the FOLDER's path for a folder-note, since that row's `value` is the
+ * folder, not the note; see the folder-note paragraph below). A FIFTH map, `labelIdByPath`, is built
+ * in the SAME `useMemo` right after (see the `aria-labelledby` paragraph below) rather than inside
+ * `buildTreeNodeData` itself, since it needs `reactId` (a hook value `buildTreeNodeData` — a plain
+ * function — has no access to). One pass, one source of truth, same "don't re-derive it twice"
+ * discipline the old flat-list builder followed.
  *
- * All keyboard handling reads off ONE memoised flat list, `visibleNodes` (built by
- * `pushVisibleNodes`, depth-first, skipping the children of a collapsed folder) — this is what
- * "don't re-implement traversal per key handler" cashes out to: ArrowDown/Up/Home/End index into
- * it directly, ArrowRight/Left lean on its `parentPath`/`hasChildren`/`isExpanded` fields, and
- * type-ahead scans it circularly from the current index. The RECURSIVE render tree
- * (`VaultNavRow`) is a separate, deliberately duplicate-free consumer of the same
- * `visibleChildrenOf` helper the flat builder uses — one produces real nested `<li>`/`<ul>` DOM,
- * the other produces the order keyboard nav walks; both agree because both filter children the
- * same way.
+ * Mantine owns almost all keyboard handling now: ArrowUp/Down move focus across every visible
+ * `[role="treeitem"]` in document order, ArrowRight/Left expand/collapse and step into/out of a
+ * subtree — all via `TreeNode`'s own `onKeyDown`, which calls `stopPropagation` for those four keys
+ * plus Space, so they never reach this component. `Home`/`End`/`Enter`/type-ahead have no Mantine
+ * equivalent and are NOT intercepted, so they bubble to the tree root — `useTreeKeyboardExtras`
+ * (`use-tree-keyboard-extras.ts`) owns that handler, reading `document.activeElement`/`data-value`
+ * instead of a hand-maintained flat list, since the currently-focused `<li>` already carries
+ * `data-value` (see `TreeNode`'s own render). `expandOnSpace={false}` on `<Tree>` is what lets Space
+ * through: Mantine's default toggles ANY node (leaf or folder) on Space, but this file only ever
+ * toggles a folder — same guard that hook's Enter case uses.
+ *
+ * `expandedState` persists via the same `useLocalStorage` under `storageKey` as before, and the
+ * ancestors-of-`activePath` auto-expand effect is untouched — only the STORAGE SHAPE feeding it
+ * changed. Mantine's `TreeExpandedState` is `Record<string, boolean>` keyed by `value`, not the old
+ * `Set<string>`, so `expanded` (the persisted `readonly string[]`) is converted both ways:
+ * `expandedRecord` (array -> record) is what's handed to `useTree`, and `handleExpandedStateChange`
+ * (record -> array) is what writes back. That handler also FILTERS to folder paths only — Mantine's
+ * own ArrowRight/Space, run on a leaf note, unconditionally call `expand()`/`toggleExpanded()` on it
+ * (no `hasChildren` guard internally), which would otherwise leak note paths into the persisted
+ * expanded set as harmless-but-growing cruft.
  *
  * Folder-note convention (unchanged): a folder containing `{folderName}.md` (e.g. `Areas/Gaming/
- * Wild Rift/Wild Rift.md`) is itself navigable — the folder-note child is hidden from the
- * rendered children (the folder row IS that note now) and the row's label links to it. A folder
- * without one stays a plain, non-link `<span>` label that only toggles expansion.
+ * Wild Rift/Wild Rift.md`) is itself navigable — the folder-note child is hidden from `children`
+ * (the folder row IS that note now) and the row's label links to it. A folder without one stays a
+ * plain, non-link label that only toggles. `visibleChildrenOf`/`folderNoteOf` are the one place this
+ * rule is expressed, read by both `buildTreeNodeData` and `VaultNavRow` so they can't disagree.
  *
- * Row chrome: hover moved OFF a per-row `useState` (26 rows re-rendering on `mousemove`) and onto
- * plain CSS `:hover` — see `vault-nav.module.css`'s doc for the `--vault-nav-hover-ink` custom
- * property that lets a label's resolved text color still react to ancestor hover without any JS.
- * `active` (derived from `activePath`, not transient) stays JS-computed and resolves straight to
- * `VX.ink`/`data-active` — CSS then decides whether hover or active wins the background via source
- * order (see the stylesheet).
+ * THREE a11y gaps in Mantine 9.3.2's non-virtualized `<li role="treeitem">` are patched by ONE hook,
+ * `useTreeItemA11ySync` (`use-tree-item-a11y-sync.ts`) — see that file's own doc for the full
+ * per-patch rationale AND for why its effect carries a real dependency array rather than running
+ * unconditionally. The brief for this rewrite flagged the first two below; the third turned up
+ * empirically once real nesting was actually rendered and is arguably the more serious of the three:
  *
- * Indentation is now STRUCTURAL — each level is a real nested `<ul role="group">` rather than a
- * flat `depth * 12px` inline offset — because a flat offset cannot draw an indent guide. The
- * guide itself lives entirely in `vault-nav.module.css`, on the `classes.tree`/`classes.group`
- * CSS-module classes. Not on bare `[role='tree']`/`[role='group']` attribute selectors: a CSS
- * module rewrites class names only, so an attribute selector would ship from this package as a
- * GLOBAL rule and restyle every tree on a consumer's page.
- * The chevron's own CSS box (`classes.chevron`) is reused, empty and un-clickable, as the
- * notes' alignment spacer too — same box, same width at both pointer densities, no second class.
+ * 1. No `aria-expanded` on the `<li>` at all (only the virtualized `FlatTreeNode` path sets it).
+ * 2. The built-in roving tabindex is STATIC: `tabIndex: rootIndex === 0 ? 0 : -1` on every render,
+ *    which never follows focus — tab out and back always lands on row 1. Tracking WHICH node last had
+ *    keyboard focus is this file's own job (`focusedPath`, updated by one delegated `onFocus` on the
+ *    tree root — `focusin` bubbles, and `event.target` is reliably the specific `<li>` that received
+ *    it, no ancestor-vs-target ambiguity since there's exactly one listener, not one per row); making
+ *    that preference stick, including validating it against the live `<li>`s, is
+ *    `useTreeItemA11ySync`'s.
+ * 3. Mantine's `<li>` carries NEITHER `aria-label` NOR `aria-labelledby`, so its accessible name falls
+ *    back to "name from content" — which, in a REAL nested tree, recurses into every descendant
+ *    `<li>` too. A folder's computed name ends up being its own label PLUS every visible descendant's
+ *    label concatenated (measured live: the `Wild Rift` folder's row named itself "Wild Rift Runes").
+ *    This is not a corner case a consumer could trigger, it breaks EVERY folder with visible children,
+ *    immediately — worse than the two gaps the brief called out. The fix is the same shape as the old
+ *    file's own `aria-labelledby`, just applied imperatively here instead of declaratively, for the
+ *    same "don't own the `<li>`" reason patches 1 and 2 are imperative — pointing at `labelIdByPath`
+ *    (below), NOT a `sanitizeForId(path)` substitution: two distinct legal vault paths
+ *    (`Projects/Notes.md` and `Projects-Notes.md`) sanitize to the same string, which would collide
+ *    two rows' ids and misdirect `aria-labelledby` for one of them. `labelIdByPath` instead assigns
+ *    ids by MAP-ITERATION ORDER (`vault-nav-label-${reactId}-${index}`) over the exact same
+ *    `nodesByPath` `buildTreeNodeData` already builds — one pass, collision-free by construction
+ *    rather than by hoping path characters don't collide, and `reactId` (`useId()`) still keeps two
+ *    simultaneously-mounted `VaultNav`s (the desktop sidebar and the mobile drawer) from colliding
+ *    with EACH OTHER.
  *
- * The icon slot (`RowIcon`) sits between the chevron spacer and the label, inside the same row
- * flex both already live in — no new wrapper, no per-row state. It reads `node.icon` (set by
- * `obsidian-vault-core`'s `buildTree` from Iconize's `data.json`) and the `renderIcon` seam
- * (`context.tsx`) and renders nothing unless BOTH are present, matching Obsidian itself: a node
- * with no configured icon reserves no icon space. `aria-hidden` because the row's accessible name
- * is entirely the label (`aria-labelledby` -> `RowLabel`'s `id`), same reasoning as the chevron.
- * Sized at 14px — the same pixel value `RowLabel`'s `size="sm"` `Text` resolves to — so the icon
- * reads as optically matched to the label rather than towering over or shrinking under it; the
- * actual SVG sizing is the consumer's `renderIcon` call, this file only bounds the wrapping box.
+ * `aria-level` is the one attribute deliberately NOT patched in, unlike the old hand-rolled tree. The
+ * DOM here is REAL nesting — `<li role="treeitem"><ul role="group"><li role="treeitem">...` — and per
+ * the ARIA tree pattern, level is computed implicitly from that structure when no explicit
+ * `aria-level` is present; Mantine simply relies on the implicit computation rather than stamping the
+ * attribute. That is spec-valid, not a regression, so nothing here re-adds it.
+ *
+ * Row chrome: hover is still plain CSS `:hover` reacting through `--vault-nav-hover-ink` (see
+ * `vault-nav.module.css`), `active` is still derived from `activePath`/Mantine's own `selectedState`
+ * (never transient), never JS-toggled per row.
+ *
+ * Indentation stays STRUCTURAL (each level a real nested `[role="group"]` `<ul>`, `vault-nav.module
+ * .css`'s `.group`) rather than Mantine's own `--label-offset`/`withLines` line-guide system —
+ * `withLines` positions its connector lines purely from `--label-offset` (a cumulative offset FROM
+ * THE ROOT), which assumes indentation is applied that same way. This file's indentation instead
+ * compounds through nested `<ul>` margins, one real DOM level at a time, so a Mantine-drawn line
+ * would be computed against a coordinate system this file's rows don't actually sit in and would
+ * misalign. Re-architecting indentation onto `--label-offset` to make the two agree was possible but
+ * riskier to get right without a live render to check against (no dev server was run for this change)
+ * than keeping the existing, already-considered indent guide — which also does something Mantine's
+ * default doesn't: fades in only on hover/focus-within instead of always-on, matching the "quiet
+ * affordance" the underline treatment elsewhere in this file goes for. `withLines` stays off;
+ * `levelOffset={14}` is still set (chrome pass ask) since Mantine sets `--label-offset` on the `<li>`
+ * regardless of whether this file's CSS reads it, so a sane value costs nothing to carry.
+ *
+ * The icon slot (`RowIcon`) now ALWAYS renders something: the consumer's Iconize-mapped icon
+ * (`node.icon` + `renderIcon`) when both are present, else a small built-in inline-SVG fallback
+ * (folder-open/folder-closed/note) so a row is never a blank gutter next to text — the "ragged text
+ * list" the chrome pass targets. Iconize still takes precedence when configured; nothing here changes
+ * that half. The chevron (`RowChevron`) similarly draws its own inline SVG by default, replacing the
+ * literal `▸` glyph the old file used (a Unicode character renders differently per platform, which
+ * was the biggest "not native" tell) — `renderChevron` (`context.tsx`) lets a consumer swap in a real
+ * icon-library glyph instead; both stay icon-library-free without one wired.
  *
  * The `renderLink` seam: `VaultLinkRenderer` (`context.tsx`, untouched here) is only
  * `(href, children) => ReactNode`, so it hands back a consumer-owned element (a plain `<a>`, or a
- * router `<Link>`) whose props this file cannot set. Both things the ideal DOM would put on that
- * anchor are therefore placed elsewhere. `aria-labelledby` targets the `id` on the `Text` rendered
- * AS the anchor's children — any element carrying that id satisfies the ARIA reference, it need
- * not be an ancestor — which is fully sufficient for the accessible name. `tabIndex={-1}` is
- * applied imperatively after commit (see the effect near the bottom of `VaultNav`), because an
- * anchor left in the tab order would give the tree ~26 tab stops and defeat the roving tabindex
- * outright.
+ * router `<Link>`) this file cannot set further props on — see the `aria-labelledby` paragraph above
+ * for the one place that now costs something. `tabIndex={-1}` is still applied imperatively to every
+ * anchor (also `useTreeItemA11ySync`), because an anchor left in the tab order would give the tree
+ * ~26 tab stops and defeat the roving tabindex outright — same reasoning as before, folded into that
+ * hook alongside the other two patches since all three walk the same DOM.
+ *
+ * `VaultNav`'s own body is composition over these pieces: `buildTreeNodeData` derives the tree data
+ * and lookup maps, `useLocalStorage` + the ancestor-expand effect bridge `expanded`/`expandedRecord`,
+ * `useTreeKeyboardExtras` owns the keys Mantine doesn't handle, and `useTreeItemA11ySync` owns the
+ * imperative DOM patch. Kept as four separate pieces rather than one large function for the same
+ * reason `RowIcon`/`RowChevron`/`buildTreeNodeData` are already split out above.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { FocusEvent, KeyboardEvent } from 'react'
-import { Text } from '@mantine/core'
+import type { FocusEvent } from 'react'
+import { Text, Tree, useTree } from '@mantine/core'
+import type { RenderTreeNodePayload, TreeNodeData } from '@mantine/core'
 import { useLocalStorage, useReducedMotion } from '@mantine/hooks'
 import { alpha, VX } from 'basalt-ui/tokens'
-import { foldDiacritics } from 'obsidian-vault-core/search'
 import type { VaultNote, VaultTreeNode } from 'obsidian-vault-core'
-import type { VaultIconRenderer } from '../context.js'
+import type { VaultChevronRenderer, VaultIconRenderer } from '../context.js'
 import { useVault } from '../context.js'
+import { useTreeItemA11ySync } from './use-tree-item-a11y-sync.js'
+import { useTreeKeyboardExtras } from './use-tree-keyboard-extras.js'
 import classes from './vault-nav.module.css'
 
-/** Pixel size of the icon slot — matches `RowLabel`'s `size="sm"` `Text`, see the module doc. */
+/** Pixel size of the icon slot. Matches Mantine's own `Tree` demo weight (`size={14}`); the wrapping
+ * span also carries `opacity: 0.75` (same demo) so an icon sits under the label, not over it. */
 const ROW_ICON_SIZE_PX = 14
+
+/** Mirrors Mantine's own `TreeExpandedState` (`Record<node.value, boolean>`) — not imported because
+ * `@mantine/core`'s `Tree` barrel re-exports `useTree`'s INPUT/RETURN types but not this one. */
+type TreeExpandedRecord = Record<string, boolean>
 
 export type VaultNavProps = {
   readonly activePath?: string
@@ -96,9 +163,6 @@ export type VaultNavProps = {
    * unset. Never fires for a chevron toggle (expanding a folder isn't navigating). */
   readonly onNavigate?: () => void
 }
-
-/** Type-ahead accumulates typed characters within this window before the buffer resets. */
-const TYPE_AHEAD_TIMEOUT_MS = 500
 
 /** The note that makes `node`'s own row navigable — a child note whose basename === the folder's name. */
 function folderNoteOf(node: VaultTreeNode): VaultNote | undefined {
@@ -112,8 +176,8 @@ type VisibleChildren = {
 }
 
 /** The folder-note (if any) plus the child list with that folder-note filtered out — the ONE place
- * this rule is expressed, read by both the flat-list builder and the recursive renderer so they
- * can never disagree on what's visible under a folder. */
+ * this rule is expressed, read by both `buildTreeNodeData` and `VaultNavRow` so they can never
+ * disagree on what's visible under a folder. */
 function visibleChildrenOf(node: VaultTreeNode): VisibleChildren {
   const folderNote = folderNoteOf(node)
   const children = (node.children ?? []).filter(
@@ -141,67 +205,118 @@ function sameMembers(a: readonly string[], b: readonly string[]): boolean {
   return b.every((path) => set.has(path))
 }
 
-/** `id` attributes can't contain a `/` or a space (both legal in a vault path) without at least
- * being unambiguous about it — collapse anything that isn't already id-safe to `-`. */
-function sanitizeForId(path: string): string {
-  return path.replace(/[^a-zA-Z0-9_-]/g, '-')
+/** The lookup maps built alongside Mantine's `TreeNodeData[]` — see the module doc's `data` paragraph.
+ * `labelIdByPath` is populated separately, in `VaultNav` itself, since it needs `useId()` — see the
+ * module doc's `aria-labelledby` paragraph for why it's index-based rather than derived from the path. */
+type TreeBuildResult = {
+  readonly data: TreeNodeData[]
+  readonly nodesByPath: ReadonlyMap<string, VaultTreeNode>
+  readonly namesByPath: ReadonlyMap<string, string>
+  readonly hasChildrenByPath: ReadonlyMap<string, boolean>
+  readonly selectableValueByPath: ReadonlyMap<string, string>
+  readonly labelIdByPath: ReadonlyMap<string, string>
 }
 
-/** One row's flattened shape — depth-first VISIBLE order, i.e. skipping the subtree of any
- * collapsed folder. This is the single list every keyboard handler and the roving-tabindex
- * fallback read from; nothing here re-derives it. */
-type FlatNode = {
-  readonly path: string
-  readonly depth: number
-  readonly parentPath: string | undefined
-  readonly name: string
-  readonly node: VaultTreeNode
-  readonly hasChildren: boolean
-  readonly isExpanded: boolean
-  /** The note this row navigates to on click/Enter — a note's own path, or a folder's folder-note
-   * path. `undefined` for a toggle-only folder with no folder note. */
-  readonly selectablePath: string | undefined
-}
-
-function pushVisibleNodes(
+function buildTreeNodeData(
   nodes: readonly VaultTreeNode[],
-  expanded: ReadonlySet<string>,
-  depth: number,
-  parentPath: string | undefined,
-  out: FlatNode[],
-): void {
+  nodesByPath: Map<string, VaultTreeNode>,
+  namesByPath: Map<string, string>,
+  hasChildrenByPath: Map<string, boolean>,
+  selectableValueByPath: Map<string, string>,
+): TreeNodeData[] {
+  const out: TreeNodeData[] = []
   for (const node of nodes) {
     if (node.kind === 'note') {
       if (node.note === undefined) continue
-      out.push({
-        path: node.path,
-        depth,
-        parentPath,
-        name: node.note.title,
-        node,
-        hasChildren: false,
-        isExpanded: false,
-        selectablePath: node.note.path,
-      })
+      nodesByPath.set(node.path, node)
+      namesByPath.set(node.path, node.note.title)
+      hasChildrenByPath.set(node.path, false)
+      selectableValueByPath.set(node.note.path, node.path)
+      out.push({ value: node.path, label: node.note.title })
       continue
     }
     const { folderNote, children } = visibleChildrenOf(node)
-    const isExpanded = expanded.has(node.path)
+    nodesByPath.set(node.path, node)
+    namesByPath.set(node.path, node.name)
+    hasChildrenByPath.set(node.path, children.length > 0)
+    if (folderNote !== undefined) selectableValueByPath.set(folderNote.path, node.path)
+    const childData = buildTreeNodeData(
+      children,
+      nodesByPath,
+      namesByPath,
+      hasChildrenByPath,
+      selectableValueByPath,
+    )
     out.push({
-      path: node.path,
-      depth,
-      parentPath,
-      name: node.name,
-      node,
-      hasChildren: children.length > 0,
-      isExpanded,
-      selectablePath: folderNote?.path,
+      value: node.path,
+      label: node.name,
+      ...(childData.length > 0 && { children: childData }),
     })
-    if (isExpanded) pushVisibleNodes(children, expanded, depth + 1, node.path, out)
   }
+  return out
+}
+
+/** Hand-drawn, icon-library-free chevron — replaces the old literal `▸` glyph. Always points right;
+ * `RowChevron` rotates the wrapping box on expand. */
+function DefaultChevronIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width={10}
+      height={10}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5.5 3l5 5-5 5" />
+    </svg>
+  )
+}
+
+type FallbackIconKind = 'folder-open' | 'folder-closed' | 'note'
+
+/** Built-in row icon used whenever Iconize has no `node.icon`, or the consumer supplied no
+ * `renderIcon` — see the module doc's icon-slot paragraph. Hand-drawn, icon-library-free. */
+function FallbackIcon({ kind }: { readonly kind: FallbackIconKind }) {
+  const shared = {
+    viewBox: '0 0 16 16',
+    width: ROW_ICON_SIZE_PX,
+    height: ROW_ICON_SIZE_PX,
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.3,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': 'true' as const,
+  }
+  if (kind === 'folder-open') {
+    return (
+      <svg {...shared}>
+        <path d="M1.5 5.5a1 1 0 0 1 1-1h3.4l1.2 1.3H13a1 1 0 0 1 .97 1.24l-.9 3.6a1 1 0 0 1-.97.76H3a1 1 0 0 1-1-1z" />
+      </svg>
+    )
+  }
+  if (kind === 'folder-closed') {
+    return (
+      <svg {...shared}>
+        <path d="M1.5 4.5a1 1 0 0 1 1-1h3.4l1.2 1.3H13a1 1 0 0 1 1 1v6.2a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1z" />
+      </svg>
+    )
+  }
+  return (
+    <svg {...shared}>
+      <path d="M4 1.5h5L12.5 5v9a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Z" />
+      <path d="M9 1.5V5h3.5" />
+    </svg>
+  )
 }
 
 type RowLabelProps = {
+  /** Matches the `aria-labelledby` `useTreeItemA11ySync` stamps onto this row's `<li>` — see the
+   * module doc's third patch paragraph for why that's imperative, not declarative. */
   readonly id: string
   readonly label: string
   readonly color: string
@@ -211,13 +326,13 @@ type RowLabelProps = {
 }
 
 /**
- * The text this file owns inside a row — also the element `aria-labelledby` points at (`id`),
- * since the seam that renders the actual `<a>` (`renderLink`) is consumer-owned and can't take an
- * `id` prop directly (see the module doc's "known seam limitation"). The `text-decoration-line` is
- * always set HERE, never left to an ancestor: a descendant that specifies its own value stops the
- * anchor's underline from painting through it regardless of the anchor's computed value — the same
- * belt to `vault-nav.module.css`'s suspenders. `flex: 1` lets this component also serve as the flex
- * item directly (the toggle-only folder-label case, which has no wrapping wrapper of its own).
+ * The text this file owns inside a row. The `text-decoration-line` is always set HERE, never left to
+ * an ancestor: a descendant that specifies its own value stops the anchor's underline from painting
+ * through it regardless of the anchor's computed value — the same belt to `vault-nav.module.css`'s
+ * suspenders. `flex: 1` lets this component also serve as the flex item directly (the toggle-only
+ * folder-label case, which has no wrapping wrapper of its own). `fontSize: 13` overrides the
+ * `size="sm"` token (14px) — Obsidian's own sidebar runs closer to 13px; kept as an explicit style
+ * rather than hunting for a smaller `size` token so this stays independent of basalt-ui's scale.
  *
  * `underline` is that decision made deliberately rather than inherited. Obsidian's own explorer
  * underlines exactly those folders that have a folder note, because those rows do two different
@@ -235,6 +350,7 @@ function RowLabel({ id, label, color, weight, underline = false }: RowLabelProps
       truncate="end"
       style={{
         color,
+        fontSize: 13,
         textDecoration: underline ? 'underline' : 'none',
         ...(underline && {
           textDecorationColor: alpha(color, 0.25),
@@ -252,13 +368,19 @@ function RowLabel({ id, label, color, weight, underline = false }: RowLabelProps
 type RowIconProps = {
   readonly icon: string | undefined
   readonly renderIcon: VaultIconRenderer | undefined
+  readonly fallback: FallbackIconKind
 }
 
-/** Renders `node.icon` via the consumer's `renderIcon` seam, or nothing at all when either half is
- * missing — see the module doc's icon-slot paragraph. `aria-hidden` because the row's accessible
- * name lives entirely on `RowLabel`. */
-function RowIcon({ icon, renderIcon }: RowIconProps) {
-  if (icon === undefined || renderIcon === undefined) return null
+/** Renders `node.icon` via the consumer's `renderIcon` seam when both are present, else the built-in
+ * `FallbackIcon` — see the module doc's icon-slot paragraph. `aria-hidden` because the row's
+ * accessible name is entirely the label (see the module doc's `aria-labelledby` paragraph). */
+function RowIcon({ icon, renderIcon, fallback }: RowIconProps) {
+  const content =
+    icon !== undefined && renderIcon !== undefined ? (
+      renderIcon(icon)
+    ) : (
+      <FallbackIcon kind={fallback} />
+    )
   return (
     <span
       aria-hidden="true"
@@ -269,174 +391,138 @@ function RowIcon({ icon, renderIcon }: RowIconProps) {
         flexShrink: 0,
         width: ROW_ICON_SIZE_PX,
         height: ROW_ICON_SIZE_PX,
+        opacity: 0.75,
       }}
     >
-      {renderIcon(icon)}
+      {content}
     </span>
   )
 }
 
-type VaultNavRowProps = {
-  readonly node: VaultTreeNode
-  readonly depth: number
-  readonly activePath: string | undefined
-  readonly expanded: ReadonlySet<string>
-  readonly tabbablePath: string | undefined
-  readonly onToggle: (path: string) => void
-  readonly onNavigate: (() => void) | undefined
-  readonly onRowFocus: (path: string) => void
-  readonly registerRef: (path: string, el: HTMLLIElement | null) => void
+type RowChevronProps = {
+  readonly expanded: boolean
+  readonly reduceMotion: boolean
+  readonly onToggle: () => void
+  readonly renderChevron: VaultChevronRenderer | undefined
 }
 
+/** The chevron box also serves as the notes' alignment spacer (rendered empty, un-clickable, via
+ * `RowChevronSpacer` below) — same box, same width at every depth and pointer density, no second
+ * exported class. `stopPropagation` keeps this click from ALSO bubbling into the row's own onClick
+ * (which would double-toggle a folder-note-less folder) or the anchor's onNavigate (folder-note
+ * case) — see `VaultNavRow`. `data-testid` is a test-only hook: the chevron is `aria-hidden` and
+ * carries no text a11y query can target now that it's an SVG rather than the old `▸` glyph. */
+function RowChevron({ expanded, reduceMotion, onToggle, renderChevron }: RowChevronProps) {
+  return (
+    <span
+      className={classes.chevron}
+      aria-hidden="true"
+      data-testid="vault-nav-chevron"
+      onClick={(event) => {
+        event.stopPropagation()
+        onToggle()
+      }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: VX.muted,
+        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+        transition: reduceMotion ? 'none' : 'transform 120ms ease',
+      }}
+    >
+      {renderChevron !== undefined ? renderChevron() : <DefaultChevronIcon />}
+    </span>
+  )
+}
+
+/** Empty, un-clickable — reserves the exact same box `RowChevron` occupies so note and folder labels
+ * stay aligned at every depth and pointer density. */
+function RowChevronSpacer() {
+  return <span className={classes.chevron} aria-hidden="true" />
+}
+
+type VaultNavRowProps = {
+  readonly vaultNode: VaultTreeNode
+  /** Matches the `aria-labelledby` `useTreeItemA11ySync` stamps onto this row's `<li>`. */
+  readonly labelId: string
+  readonly active: boolean
+  readonly expanded: boolean
+  readonly hasChildren: boolean
+  readonly onToggle: () => void
+  readonly onNavigate: (() => void) | undefined
+  readonly reduceMotion: boolean
+}
+
+/** The content Mantine's `TreeNode` renders INSIDE its own `<li>` — see the module doc for why this
+ * component does not, and cannot, own that `<li>` itself. */
 function VaultNavRow({
-  node,
-  depth,
-  activePath,
+  vaultNode,
+  labelId,
+  active,
   expanded,
-  tabbablePath,
+  hasChildren,
   onToggle,
   onNavigate,
-  onRowFocus,
-  registerRef,
+  reduceMotion,
 }: VaultNavRowProps) {
-  const { hrefFor, renderLink, renderIcon } = useVault()
-  const reactId = useId()
-  const labelId = `vault-nav-label-${reactId}-${sanitizeForId(node.path)}`
-  const tabIndex = tabbablePath === node.path ? 0 : -1
+  const { hrefFor, renderLink, renderIcon, renderChevron } = useVault()
 
-  // `onFocus` is React's binding for the native `focusin`, which BUBBLES — and in a real tree the
-  // `<li>`s are nested, so focusing a leaf also fires this on every ancestor row, outermost LAST.
-  // Without the target check the outermost ancestor therefore always wins and "where is focus" ends
-  // up recorded as the top-level folder: measured live, ArrowDown from `Shyvana` (4 levels deep)
-  // moved to `Engineering`, the node after `Areas`, because focus had been recorded as `Areas`
-  // every single time. Only the row the event actually landed on may report itself.
-  const handleFocus = (event: FocusEvent<HTMLLIElement>) => {
-    if (event.target === event.currentTarget) onRowFocus(node.path)
-  }
-
-  if (node.kind === 'note') {
-    if (node.note === undefined) return null
-    const note = node.note
-    const active = note.path === activePath
+  if (vaultNode.kind === 'note') {
+    if (vaultNode.note === undefined) return null
+    const note = vaultNode.note
     // Resting color reads `--vault-nav-hover-ink` (set by `.row:hover`) with the resting shade as
     // its `var()` fallback — see the module doc. Active bypasses the hover var entirely; it's
     // never a transient state, so it can just resolve straight to ink.
     const color = active ? VX.ink : `var(--vault-nav-hover-ink, ${VX.ink2})`
     return (
-      <li
-        ref={(el) => registerRef(node.path, el)}
-        className={classes.item}
-        role="treeitem"
-        aria-level={depth}
-        aria-selected={active}
-        aria-labelledby={labelId}
-        tabIndex={tabIndex}
-        onFocus={handleFocus}
-      >
-        <div className={classes.row} data-active={active || undefined} onClick={onNavigate}>
-          {/* Empty, un-clickable — reserves the exact same box the chevron occupies so note and
-              folder labels stay aligned at every depth and pointer density. */}
-          <span className={classes.chevron} aria-hidden="true" />
-          <RowIcon icon={node.icon} renderIcon={renderIcon} />
-          <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }}>
-            {renderLink(
-              hrefFor(note),
-              <RowLabel
-                id={labelId}
-                label={note.title}
-                color={color}
-                weight={active ? 600 : 400}
-              />,
-            )}
-          </div>
+      <div className={classes.row} data-active={active || undefined} onClick={onNavigate}>
+        <RowChevronSpacer />
+        <RowIcon icon={vaultNode.icon} renderIcon={renderIcon} fallback="note" />
+        <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }}>
+          {renderLink(
+            hrefFor(note),
+            <RowLabel id={labelId} label={note.title} color={color} weight={active ? 600 : 400} />,
+          )}
         </div>
-      </li>
+      </div>
     )
   }
 
-  const { folderNote, children } = visibleChildrenOf(node)
-  const isOpen = expanded.has(node.path)
-  const active = folderNote !== undefined && folderNote.path === activePath
+  const folderNote = folderNoteOf(vaultNode)
   const color = active ? VX.ink : `var(--vault-nav-hover-ink, ${VX.muted})`
-  // `aria-expanded` only belongs on an item that can actually expand — present for every folder,
-  // ABSENT entirely (not `false`) for one with no children, same as it's already absent for notes.
-  const ariaExpanded = children.length > 0 ? isOpen : undefined
 
   return (
-    <li
-      ref={(el) => registerRef(node.path, el)}
-      className={classes.item}
-      role="treeitem"
-      aria-level={depth}
-      aria-expanded={ariaExpanded}
-      aria-selected={active}
-      aria-labelledby={labelId}
-      tabIndex={tabIndex}
-      onFocus={handleFocus}
+    <div
+      className={classes.row}
+      data-active={active || undefined}
+      // A folder with no folder-note has no link of its own — the whole row toggles, not just the
+      // chevron. A folder WITH one only toggles from the chevron; the row's click goes to the link
+      // instead, via the wrapping anchorReset div's own onClick below.
+      onClick={folderNote === undefined ? onToggle : undefined}
     >
-      <div
-        className={classes.row}
-        data-active={active || undefined}
-        // A folder with no folder-note has no link of its own — the whole row toggles, not just
-        // the chevron. A folder WITH one only toggles from the chevron (below); the row's click
-        // goes to the link instead, via the wrapping anchorReset div's own onClick.
-        onClick={folderNote === undefined ? () => onToggle(node.path) : undefined}
-      >
-        <span
-          className={classes.chevron}
-          aria-hidden="true"
-          onClick={(event) => {
-            // Stops this from ALSO bubbling into the row's own onClick above (which would double
-            // -toggle a folder-note-less folder back to its starting state) or into the anchor's
-            // onNavigate below (which would fire onNavigate for a mere expand/collapse).
-            event.stopPropagation()
-            onToggle(node.path)
-          }}
-          style={{
-            color: VX.muted,
-            fontSize: VX.text.md,
-            display: 'inline-block',
-            transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-            transition: 'transform 120ms ease',
-          }}
-        >
-          ▸
-        </span>
-        <RowIcon icon={node.icon} renderIcon={renderIcon} />
-        {folderNote !== undefined ? (
-          <div
-            className={classes.anchorReset}
-            style={{ flex: 1, minWidth: 0 }}
-            onClick={onNavigate}
-          >
-            {renderLink(
-              hrefFor(folderNote),
-              <RowLabel id={labelId} label={node.name} color={color} weight={600} underline />,
-            )}
-          </div>
-        ) : (
-          <RowLabel id={labelId} label={node.name} color={color} weight={600} />
-        )}
-      </div>
-      {isOpen && children.length > 0 && (
-        <ul className={classes.group} role="group">
-          {children.map((child) => (
-            <VaultNavRow
-              key={child.path}
-              node={child}
-              depth={depth + 1}
-              activePath={activePath}
-              expanded={expanded}
-              tabbablePath={tabbablePath}
-              onToggle={onToggle}
-              onNavigate={onNavigate}
-              onRowFocus={onRowFocus}
-              registerRef={registerRef}
-            />
-          ))}
-        </ul>
+      <RowChevron
+        expanded={hasChildren && expanded}
+        reduceMotion={reduceMotion}
+        onToggle={onToggle}
+        renderChevron={renderChevron}
+      />
+      <RowIcon
+        icon={vaultNode.icon}
+        renderIcon={renderIcon}
+        fallback={hasChildren && expanded ? 'folder-open' : 'folder-closed'}
+      />
+      {folderNote !== undefined ? (
+        <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }} onClick={onNavigate}>
+          {renderLink(
+            hrefFor(folderNote),
+            <RowLabel id={labelId} label={vaultNode.name} color={color} weight={600} underline />,
+          )}
+        </div>
+      ) : (
+        <RowLabel id={labelId} label={vaultNode.name} color={color} weight={600} />
       )}
-    </li>
+    </div>
   )
 }
 
@@ -447,12 +533,52 @@ export function VaultNav({
   onNavigate,
 }: VaultNavProps) {
   const { index } = useVault()
-  const rootRef = useRef<HTMLDivElement>(null)
+  const rootRef = useRef<HTMLUListElement>(null)
   const reduceMotion = useReducedMotion()
-  const itemRefs = useRef(new Map<string, HTMLLIElement>())
-  const typeAheadBufferRef = useRef('')
-  const typeAheadTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [focusedPath, setFocusedPath] = useState<string | undefined>(undefined)
+
+  // Per-instance prefix so two simultaneously-mounted `VaultNav`s (the desktop sidebar and the
+  // mobile drawer) never stamp the same `id` — see the module doc's third patch paragraph.
+  const reactId = useId()
+
+  const {
+    data: treeData,
+    nodesByPath,
+    namesByPath,
+    hasChildrenByPath,
+    selectableValueByPath,
+    labelIdByPath,
+  } = useMemo<TreeBuildResult>(() => {
+    const nodesByPath = new Map<string, VaultTreeNode>()
+    const namesByPath = new Map<string, string>()
+    const hasChildrenByPath = new Map<string, boolean>()
+    const selectableValueByPath = new Map<string, string>()
+    const data = buildTreeNodeData(
+      index.tree.children ?? [],
+      nodesByPath,
+      namesByPath,
+      hasChildrenByPath,
+      selectableValueByPath,
+    )
+    // Index-based, not derived from the path's characters — see the module doc's `aria-labelledby`
+    // paragraph: two distinct legal vault paths can sanitize to the same string, which would collide
+    // two rows' ids. `nodesByPath`'s iteration order is the exact depth-first order `buildTreeNodeData`
+    // just walked, so this is a second pass over identity, not a re-derivation.
+    const labelIdByPath = new Map<string, string>()
+    let labelIndex = 0
+    for (const path of nodesByPath.keys()) {
+      labelIdByPath.set(path, `vault-nav-label-${reactId}-${labelIndex}`)
+      labelIndex += 1
+    }
+    return {
+      data,
+      nodesByPath,
+      namesByPath,
+      hasChildrenByPath,
+      selectableValueByPath,
+      labelIdByPath,
+    }
+  }, [index.tree, reactId])
 
   const defaultExpanded = useMemo(
     () => (activePath === undefined ? [] : ancestorFolderPaths(activePath)),
@@ -479,204 +605,85 @@ export function VaultNav({
   }, [activePath, setExpanded])
 
   const expandedSet = useMemo(() => new Set(expanded), [expanded])
-  const toggle = useCallback(
-    (path: string) => {
-      setExpanded((prev) => {
-        const next = new Set(prev)
-        if (next.has(path)) next.delete(path)
-        else next.add(path)
-        return [...next]
-      })
-    },
-    [setExpanded],
+  const expandedRecord = useMemo<TreeExpandedRecord>(
+    () => Object.fromEntries(expanded.map((path) => [path, true])),
+    [expanded],
   )
 
-  const visibleNodes = useMemo(() => {
-    const out: FlatNode[] = []
-    pushVisibleNodes(index.tree.children ?? [], expandedSet, 1, undefined, out)
-    return out
-  }, [index.tree, expandedSet])
+  // Mantine's own ArrowRight/Space toggle ANY node, leaf notes included (no `hasChildren` guard in
+  // `TreeNode`'s handler) — filtering to folders here keeps that from leaking note paths into the
+  // persisted expanded set. See the module doc.
+  const handleExpandedStateChange = useCallback(
+    (next: TreeExpandedRecord) => {
+      const nextArr = Object.entries(next)
+        .filter(([path, isExpanded]) => isExpanded && nodesByPath.get(path)?.kind === 'folder')
+        .map(([path]) => path)
+      setExpanded((prev) => (sameMembers(prev, nextArr) ? prev : nextArr))
+    },
+    [setExpanded, nodesByPath],
+  )
 
-  // Roving-tabindex target, in order of preference: the node the user last moved keyboard focus
-  // to (if it's still visible), else the node matching `activePath`, else the first visible node.
-  const tabbablePath = useMemo(() => {
-    if (focusedPath !== undefined && visibleNodes.some((n) => n.path === focusedPath)) {
-      return focusedPath
-    }
-    const activeNode =
-      activePath === undefined
-        ? undefined
-        : visibleNodes.find((n) => n.selectablePath === activePath)
-    return activeNode?.path ?? visibleNodes[0]?.path
-  }, [focusedPath, activePath, visibleNodes])
+  // Derived, never held — see the module doc. A folder-note's selectable `value` is its FOLDER's
+  // path (`selectableValueByPath`), not the note's own path, since that's the row Mantine renders.
+  const selectedState = useMemo(() => {
+    if (activePath === undefined) return []
+    const value = selectableValueByPath.get(activePath)
+    return value === undefined ? [] : [value]
+  }, [activePath, selectableValueByPath])
+  const selectedValue = selectedState[0]
 
-  const registerRef = useCallback((path: string, el: HTMLLIElement | null) => {
-    if (el === null) itemRefs.current.delete(path)
-    else itemRefs.current.set(path, el)
+  const tree = useTree({
+    expandedState: expandedRecord,
+    onExpandedStateChange: handleExpandedStateChange,
+    selectedState,
+  })
+
+  const renderNode = useCallback(
+    (payload: RenderTreeNodePayload) => {
+      const vaultNode = nodesByPath.get(payload.node.value)
+      const labelId = labelIdByPath.get(payload.node.value)
+      if (vaultNode === undefined || labelId === undefined) return null
+      return (
+        <VaultNavRow
+          vaultNode={vaultNode}
+          labelId={labelId}
+          active={payload.selected}
+          expanded={payload.expanded}
+          hasChildren={payload.hasChildren}
+          onToggle={() => tree.toggleExpanded(payload.node.value)}
+          onNavigate={onNavigate}
+          reduceMotion={reduceMotion}
+        />
+      )
+    },
+    [nodesByPath, labelIdByPath, tree, onNavigate, reduceMotion],
+  )
+
+  // Single delegated focus tracker — `focusin` bubbles, and with exactly one listener (at the tree
+  // root, not one per row) `event.target` is unambiguously the `<li>` that actually received focus.
+  const handleTreeFocus = useCallback((event: FocusEvent<HTMLUListElement>) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement) || target.getAttribute('role') !== 'treeitem') return
+    setFocusedPath(target.dataset['value'])
   }, [])
 
-  // Imperative — every keyboard move calls this, which calls `.focus()` on the target `<li>`; the
-  // row's own `onFocus` (see `VaultNavRow`) round-trips that back through `handleRowFocus`.
-  const focusNode = useCallback((path: string) => {
-    itemRefs.current.get(path)?.focus()
-  }, [])
+  // Home/End/Enter/type-ahead — everything else (arrows, Space) is handled by Mantine's own
+  // `TreeNode` and never reaches this handler. See `use-tree-keyboard-extras.ts`.
+  const handleRootKeyDown = useTreeKeyboardExtras({
+    rootRef,
+    namesByPath,
+    hasChildrenByPath,
+    toggleExpanded: tree.toggleExpanded,
+  })
 
-  // Focus is recorded TWICE, and the duplication is the point. `focusedPath` state drives which
-  // `<li>` renders `tabIndex={0}`, so it has to be state. But a keydown handler reading that state
-  // reads it through the closure it was created with, and React has not re-rendered yet — so two
-  // arrow presses inside one batch (key repeat, a synthetic test, a fast typist) would both
-  // navigate from the SAME stale origin. Measured live before this ref existed: Home then two
-  // ArrowDowns landed on `Areas`, `Thresh`, `Thresh` instead of `Areas`, `Engineering`, `Gaming`.
-  // The ref is written synchronously inside the focus event, so the handler always resolves the
-  // node the user is actually standing on.
-  const focusedPathRef = useRef<string | undefined>(undefined)
-  const handleRowFocus = useCallback((path: string) => {
-    focusedPathRef.current = path
-    setFocusedPath(path)
-  }, [])
-
-  // Enter: click the anchor if the row has one (reusing the exact same path a mouse click takes,
-  // onNavigate included), else toggle the folder.
-  const activateCurrent = useCallback(
-    (flat: FlatNode) => {
-      const li = itemRefs.current.get(flat.path)
-      const anchor = li?.querySelector('a')
-      if (anchor !== null && anchor !== undefined) {
-        anchor.click()
-        return
-      }
-      if (flat.node.kind === 'folder') toggle(flat.path)
-    },
-    [toggle],
-  )
-
-  useEffect(
-    () => () => {
-      if (typeAheadTimerRef.current !== undefined) clearTimeout(typeAheadTimerRef.current)
-    },
-    [],
-  )
-
-  const handleTypeAhead = useCallback(
-    (char: string) => {
-      if (typeAheadTimerRef.current !== undefined) clearTimeout(typeAheadTimerRef.current)
-      typeAheadBufferRef.current += char
-      const buffer = foldDiacritics(typeAheadBufferRef.current.toLowerCase())
-      typeAheadTimerRef.current = setTimeout(() => {
-        typeAheadBufferRef.current = ''
-      }, TYPE_AHEAD_TIMEOUT_MS)
-
-      const count = visibleNodes.length
-      if (count === 0 || buffer === '') return
-      const currentPath = focusedPathRef.current ?? tabbablePath
-      const currentIndex =
-        currentPath === undefined ? -1 : visibleNodes.findIndex((n) => n.path === currentPath)
-
-      // Scan circularly starting just after the current node, so repeated presses of the same
-      // letter cycle through every match instead of always landing on the first one.
-      for (let offset = 1; offset <= count; offset++) {
-        const candidate = visibleNodes[(currentIndex + offset + count) % count]
-        if (candidate === undefined) continue
-        if (foldDiacritics(candidate.name.toLowerCase()).startsWith(buffer)) {
-          focusNode(candidate.path)
-          return
-        }
-      }
-    },
-    [visibleNodes, tabbablePath, focusNode],
-  )
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLUListElement>) => {
-      const currentPath = focusedPathRef.current ?? tabbablePath
-      if (currentPath === undefined) return
-      const currentIndex = visibleNodes.findIndex((n) => n.path === currentPath)
-      const current = visibleNodes[currentIndex]
-      if (current === undefined) return
-
-      switch (event.key) {
-        case 'ArrowDown': {
-          event.preventDefault()
-          const next = visibleNodes[currentIndex + 1]
-          if (next !== undefined) focusNode(next.path)
-          return
-        }
-        case 'ArrowUp': {
-          event.preventDefault()
-          const prev = visibleNodes[currentIndex - 1]
-          if (prev !== undefined) focusNode(prev.path)
-          return
-        }
-        case 'ArrowRight': {
-          event.preventDefault()
-          if (current.node.kind !== 'folder') return
-          if (!current.isExpanded) {
-            if (current.hasChildren) toggle(current.path)
-            return
-          }
-          const child = visibleNodes[currentIndex + 1]
-          if (child !== undefined && child.parentPath === current.path) focusNode(child.path)
-          return
-        }
-        case 'ArrowLeft': {
-          event.preventDefault()
-          if (current.node.kind === 'folder' && current.isExpanded) {
-            toggle(current.path)
-            return
-          }
-          if (current.parentPath !== undefined) focusNode(current.parentPath)
-          return
-        }
-        case 'Home': {
-          event.preventDefault()
-          const first = visibleNodes[0]
-          if (first !== undefined) focusNode(first.path)
-          return
-        }
-        case 'End': {
-          event.preventDefault()
-          const last = visibleNodes[visibleNodes.length - 1]
-          if (last !== undefined) focusNode(last.path)
-          return
-        }
-        case 'Enter': {
-          event.preventDefault()
-          activateCurrent(current)
-          return
-        }
-        case ' ': {
-          event.preventDefault()
-          if (current.node.kind === 'folder') toggle(current.path)
-          return
-        }
-        default: {
-          if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-            handleTypeAhead(event.key)
-          }
-        }
-      }
-    },
-    [tabbablePath, visibleNodes, focusNode, toggle, activateCurrent, handleTypeAhead],
-  )
-
-  // The roving tabindex above only actually rovers if the `<li>`s are the tree's ONLY tab stops —
-  // but `renderLink` hands back a consumer-rendered anchor, and its seam
-  // (`VaultLinkRenderer: (href, children) => ReactNode`) has nowhere to pass `tabIndex`, so every
-  // one of those anchors arrives natively focusable. Left alone that is ~26 tab stops through a
-  // sidebar the WAI-ARIA tree pattern says should be exactly one, which is worse than the plain
-  // link list this replaced. So they're taken out of the tab order here, imperatively, since the
-  // seam gives no declarative way to do it. Nothing else changes: the anchors keep their `href`,
-  // stay fully clickable, and `Enter` still routes through `anchor.click()` (`activateCurrent`), so
-  // cmd-click, middle-click and open-in-new-tab all behave exactly as before.
-  //
-  // No dependency array on purpose: which anchors exist is the CONSUMER's render output, not
-  // something this component can enumerate a dependency for. Re-applying after every commit is
-  // both cheap (a few dozen attribute writes, no state, so no re-render loop) and the only version
-  // that cannot silently miss a link.
-  useEffect(() => {
-    const anchors = rootRef.current?.querySelectorAll('a')
-    if (anchors === undefined) return
-    for (const anchor of anchors) anchor.tabIndex = -1
+  // The three-in-one a11y/focus patch — see `use-tree-item-a11y-sync.ts`.
+  useTreeItemA11ySync({
+    rootRef,
+    hasChildrenByPath,
+    expandedSet,
+    focusedPath,
+    selectedValue,
+    labelIdByPath,
   })
 
   // Scroll the active row into view — re-runs once `expanded` actually contains the new active
@@ -692,23 +699,22 @@ export function VaultNav({
   }, [activePath, expanded, reduceMotion])
 
   return (
-    <div ref={rootRef} {...(className !== undefined && { className })}>
-      <ul className={classes.tree} role="tree" aria-label="Vault notes" onKeyDown={handleKeyDown}>
-        {(index.tree.children ?? []).map((child) => (
-          <VaultNavRow
-            key={child.path}
-            node={child}
-            depth={1}
-            activePath={activePath}
-            expanded={expandedSet}
-            tabbablePath={tabbablePath}
-            onToggle={toggle}
-            onNavigate={onNavigate}
-            onRowFocus={handleRowFocus}
-            registerRef={registerRef}
-          />
-        ))}
-      </ul>
-    </div>
+    <Tree
+      ref={rootRef}
+      {...(className !== undefined && { className })}
+      data={treeData}
+      tree={tree}
+      renderNode={renderNode}
+      aria-label="Vault notes"
+      levelOffset={14}
+      withLines={false}
+      expandOnClick={false}
+      expandOnSpace={false}
+      selectOnClick={false}
+      allowRangeSelection={false}
+      onKeyDown={handleRootKeyDown}
+      onFocus={handleTreeFocus}
+      classNames={{ root: classes.tree, node: classes.item, subtree: classes.group }}
+    />
   )
 }

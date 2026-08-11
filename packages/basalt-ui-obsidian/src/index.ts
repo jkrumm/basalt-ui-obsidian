@@ -9,6 +9,7 @@
  */
 export { encodeSlugPath, useVault, VaultProvider } from './context.js'
 export type {
+  VaultChevronRenderer,
   VaultContextValue,
   VaultHrefResolver,
   VaultLinkRenderer,

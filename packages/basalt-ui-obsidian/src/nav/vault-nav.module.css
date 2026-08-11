@@ -15,13 +15,14 @@
  * page. The extra entries this costs in `vault-nav.module.css.d.ts`'s hand-authored declaration
  * list are the price of the scoping, not a reason to skip it.
  *
- * Indentation is structural now (each level nests inside a real `[role="group"]` `<ul>`) instead
- * of a flat `depth * 12px` inline offset — `margin-left: 11px` + `border-left: 1px` sums to the
- * SAME 12px step per level the old flat offset produced, but the border now doubles as an indent
- * guide (same idea as GitHub Primer's `TreeView` and VS Code). The guide color is `transparent` by
- * default and only resolves to `--vx-divider` (the same token basalt-ui documents for a "sidebar
- * child indent") while the tree is hovered or contains focus — a single custom-property flip, not
- * a selector that re-matches all 26+ rows.
+ * Indentation is structural (each level nests inside a real `[role="group"]` `<ul>`, Mantine's
+ * `subtree` slot, mapped to `.group` below) rather than Mantine's own `--label-offset`/`withLines`
+ * line-guide system — see `vault-nav.tsx`'s module doc for why the two don't compose. `margin-left:
+ * 13px` + `border-left: 1px` sums to a 14px step per level (the chrome-pass target), and the border
+ * doubles as an indent guide (same idea as GitHub Primer's `TreeView` and VS Code). The guide color
+ * is `transparent` by default and only resolves to `--vx-divider` (the same token basalt-ui
+ * documents for a "sidebar child indent") while the tree is hovered or contains focus — a single
+ * custom-property flip, not a selector that re-matches all 26+ rows.
  *
  * Row hover moved OFF a per-row `useState` (26 rows re-rendering on every `mousemove`) and onto
  * plain `:hover` — CSS does this for free. The one piece hover still needs to hand back to JS is
@@ -31,10 +32,24 @@
  * sets, but a `var()` REFERENCE inside that value still resolves through the normal custom
  * -property cascade, so an ancestor's `:hover` reaches the descendant's inline color.
  *
+ * `.item:focus-visible > .row` restores a focus ring Mantine's own `Tree` styles quietly remove: its
+ * compiled CSS sets `outline: 0` on every `<li role="treeitem">` (the `node` styles-api slot, mapped
+ * to `.item` below) and only redraws an outline via `:focus-visible > .label` — a class this package
+ * never applies, since `VaultNavRow` builds its own row content instead of spreading Mantine's
+ * `elementProps`. Left alone, a keyboard-focused row would have NO visible focus indicator at all
+ * (a WCAG 2.4.7 regression the Mantine rewrite would otherwise introduce silently). Scoped to the
+ * `> .row` CHILD, not the bare `.item` (the `<li>`): a folder's `<li>` also contains its nested
+ * `<ul role="group">` subtree when expanded, so an outline on `.item` itself would ring the entire
+ * visible subtree rather than just the focused folder's own row. This rule wins regardless of source
+ * order because it's UNLAYERED: the demo app (and this project's documented `basalt-ui` consumer
+ * convention) loads Mantine's own styles inside `@layer mantine`, and any unlayered rule always beats
+ * a layered one per the CSS cascade spec, independent of specificity.
+ *
  * `.row`/`.chevron` hold what inline styles can't express: `:hover`, the indent-guide/hover-ink
  * custom properties, and the `(pointer: coarse)` media query. Measured mobile row heights were
- * 41.5-45.2px; both are floored at the WCAG 2.5.8 minimum target size on a touch device. The
- * `.chevron` box is reused, empty and un-clickable, as the notes' alignment spacer too — same
+ * 41.5-45.2px; both are floored at the WCAG 2.5.8 minimum target size on a touch device — untouched
+ * by the chrome pass's `.row` height reduction below, which only affects the FINE-pointer height.
+ * The `.chevron` box is reused, empty and un-clickable, as the notes' alignment spacer too — same
  * width at every breakpoint, no second exported class.
  */
 .anchorReset {
@@ -65,9 +80,15 @@
   list-style: none;
 }
 
+.item:focus-visible > .row {
+  outline: 2px solid var(--vx-accent);
+  outline-offset: -2px;
+  border-radius: var(--vx-radius-tight);
+}
+
 .group {
   list-style: none;
-  margin: 0 0 0 11px;
+  margin: 0 0 0 13px;
   padding: 0;
   border-left: 1px solid var(--vault-nav-guide);
 }
@@ -76,7 +97,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 26px;
+  min-height: 24px;
   padding: 3px 8px;
   border-radius: var(--vx-radius-tight);
   cursor: pointer;

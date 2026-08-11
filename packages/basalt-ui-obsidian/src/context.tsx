@@ -5,11 +5,15 @@
  * at build time and rehydrates it with `fromVaultBundle`, so the provider takes an already-built
  * `VaultIndex` and adds the things a renderer needs on top of it: how a note path becomes a URL
  * (`hrefFor`), how a URL becomes a link element in whatever router the host app uses (`renderLink`),
- * and how a `VaultTreeNode.icon` name becomes an element (`renderIcon`). All three are
- * consumer-supplied — this package stays router-agnostic AND icon-library-agnostic, the same way
- * `BasaltShell` does for routing. `renderIcon` has no default (unlike `renderLink`'s plain `<a>`):
- * there is no icon-library-free fallback, so a missing seam or a missing icon both mean "render
- * nothing" — see `vault-nav.tsx`'s row-icon slot.
+ * how a `VaultTreeNode.icon` name becomes an element (`renderIcon`), and how a folder's expand/
+ * collapse chevron is drawn (`renderChevron`). All four are consumer-supplied — this package stays
+ * router-agnostic AND icon-library-agnostic, the same way `BasaltShell` does for routing.
+ * `renderIcon` has no default (unlike `renderLink`'s plain `<a>`): there is no icon-library-free
+ * fallback for a per-node Iconize icon, so a missing seam or a missing icon both mean "render
+ * nothing" for THAT slot — see `vault-nav.tsx`'s row-icon slot, which then falls back to a small
+ * built-in folder/note glyph so every row still gets an icon. `renderChevron` similarly has a
+ * built-in default (a hand-drawn inline SVG, no library), so a consumer that doesn't wire it still
+ * gets a real vector chevron instead of the raw Unicode glyph the old `VaultNav` rendered.
  */
 import { createContext, use, useMemo } from 'react'
 import type { ReactNode } from 'react'
@@ -24,12 +28,19 @@ export type VaultLinkRenderer = (href: string, children: ReactNode) => ReactNode
 /** Renders a `VaultTreeNode.icon` name (an Iconize id like `LiCamera`) as an element. */
 export type VaultIconRenderer = (iconName: string) => ReactNode
 
+/** Renders a folder row's expand/collapse chevron. Rotation on expand is `VaultNav`'s own concern
+ * (a CSS transform on the wrapping box), so this only ever needs to draw the resting, right-pointing
+ * glyph. `undefined` falls back to `VaultNav`'s built-in inline-SVG chevron — see the module doc. */
+export type VaultChevronRenderer = () => ReactNode
+
 export type VaultContextValue = {
   readonly index: VaultIndex
   readonly hrefFor: VaultHrefResolver
   readonly renderLink: VaultLinkRenderer
   /** `undefined` when the consumer supplied none — see the module doc for why there's no default. */
   readonly renderIcon: VaultIconRenderer | undefined
+  /** `undefined` when the consumer supplied none — `VaultNav` falls back to a built-in chevron. */
+  readonly renderChevron: VaultChevronRenderer | undefined
   /**
    * Resolves a raw wikilink target from a note to a complete href, anchor included, or `undefined`
    * for a dead link. This is exactly the callback `remarkObsidianWikilink` wants — it is built
@@ -56,6 +67,8 @@ export type VaultProviderProps = {
    * `VaultNav` row falls back to exactly today's icon-free layout.
    */
   readonly renderIcon?: VaultIconRenderer
+  /** Default: `VaultNav`'s own built-in inline-SVG chevron — see the module doc. */
+  readonly renderChevron?: VaultChevronRenderer
   readonly children: ReactNode
 }
 
@@ -91,6 +104,7 @@ export function VaultProvider({
   hrefFor,
   renderLink,
   renderIcon,
+  renderChevron,
   children,
 }: VaultProviderProps) {
   const value = useMemo<VaultContextValue>(() => {
@@ -100,12 +114,13 @@ export function VaultProvider({
       hrefFor: href,
       renderLink: renderLink ?? defaultRenderLink,
       renderIcon,
+      renderChevron,
       resolveWikilink: (target, fromPath, anchor) => {
         const note = index.resolve(target, fromPath)
         return note === undefined ? undefined : href(note, anchor)
       },
     }
-  }, [index, hrefFor, renderLink, renderIcon])
+  }, [index, hrefFor, renderLink, renderIcon, renderChevron])
 
   return <VaultContext value={value}>{children}</VaultContext>
 }

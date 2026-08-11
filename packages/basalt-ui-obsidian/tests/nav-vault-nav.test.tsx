@@ -1,14 +1,29 @@
 /**
- * VaultNav — WAI-ARIA tree structure (`role="treeitem"`/`role="group"`, `aria-level`,
- * `aria-expanded`, `aria-selected`), roving tabindex, keyboard navigation, type-ahead, the
- * folder-note convention, and expand/collapse persistence. The fixture rebuilds a MINIMAL version
- * of `obsidian-vault-core`'s own `buildTree` (not exported from its public barrel) purely to shape
- * a hand-built `VaultIndex.tree` — same idiom as `obsidian-vault-core`'s own `tests/tree.test.ts`.
+ * VaultNav — WAI-ARIA tree structure (`role="treeitem"`/`role="group"`, `aria-expanded`,
+ * `aria-selected`), roving tabindex that follows keyboard focus, keyboard navigation, type-ahead,
+ * the folder-note convention, and expand/collapse persistence. Built on `@mantine/core`'s
+ * `Tree`/`useTree` — see `vault-nav.tsx`'s module doc for what Mantine owns vs. what this file still
+ * patches in. The fixture rebuilds a MINIMAL version of `obsidian-vault-core`'s own `buildTree` (not
+ * exported from its public barrel) purely to shape a hand-built `VaultIndex.tree` — same idiom as
+ * `obsidian-vault-core`'s own `tests/tree.test.ts`.
  *
- * The chevron is `aria-hidden` and not a button (see `vault-nav.tsx`'s module doc), so tests that
- * need to click it locate it by its literal glyph text (`▸`) inside the folder's treeitem, via
- * `within` — `getByText` operates on DOM content, not the accessibility tree, so `aria-hidden`
- * doesn't hide it from that query.
+ * Two DOM-level quirks this file works around, both specific to the `bun test` environment, not to
+ * `VaultNav` itself:
+ *
+ * - CSS Modules resolve to a plain STRING (the file path) under `bun test`'s built-in stub, not an
+ *   object of hashed class names — so `classes.chevron` etc. are `undefined` in every render here,
+ *   and no element in this component ever carries a CSS-module class in these tests. Nothing in this
+ *   file queries by class; role, text and `data-testid` only.
+ * - `fireEvent.keyDown(el, { key })` alone leaves `event.nativeEvent.code` empty (verified against
+ *   the installed `@testing-library/dom@10.4.1` — it does not infer `code` from `key`). Mantine's own
+ *   `TreeNode` keyboard handling (arrow keys) branches on `code`, not `key`, so every arrow-key test
+ *   below passes BOTH. `Home`/`End`/type-ahead are `VaultNav`'s own handler and read `key`, so those
+ *   don't need it.
+ *
+ * The chevron is `aria-hidden` and not a real button (see `vault-nav.tsx`'s module doc), and — since
+ * the chrome pass replaced the old literal `▸` glyph with an inline SVG — carries no text an a11y
+ * query can target either. Tests that need to click it locate it by `data-testid="vault-nav-chevron"`
+ * scoped to the folder's own treeitem, via `within`.
  */
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { MantineProvider } from '@mantine/core'
@@ -149,20 +164,32 @@ function buildIconIndex(): VaultIndex {
 }
 
 /** Clicks the folder's chevron (mouse path), scoped to its treeitem so this can't accidentally hit
- * a same-glyph chevron belonging to a different folder. */
+ * a same-testid chevron belonging to a different folder. */
 function clickChevron(name: string) {
   const row = screen.getByRole('treeitem', { name })
-  fireEvent.click(within(row).getByText('▸'))
+  fireEvent.click(within(row).getByTestId('vault-nav-chevron'))
 }
 
-/** `element.focus()` triggers VaultNav's own `onFocus` state update (`focusedPath`). Called as a
- * raw DOM API (not through `fireEvent`, which auto-wraps in `act()`), it needs its own `act()` so
- * that update is flushed before the next synchronous line — otherwise a following
- * `fireEvent.keyDown` reads the roving-tabindex handler closure from the PRE-focus render. */
+/** `element.focus()` triggers VaultNav's own delegated `onFocus` (`focusedPath`). Called as a raw
+ * DOM API (not through `fireEvent`, which auto-wraps in `act()`), it needs its own `act()` so that
+ * update — and the attribute-sync effect it re-runs — is flushed before the next synchronous line. */
 function focusItem(el: HTMLElement) {
   act(() => {
     el.focus()
   })
+}
+
+/** Nesting depth via real DOM structure: one ancestor `[role="group"]` per level below the root.
+ * `VaultNav` doesn't set an explicit `aria-level` (Mantine's `<li>` doesn't either) — see the module
+ * doc for why that's spec-valid rather than a regression. */
+function levelOf(el: HTMLElement): number {
+  let level = 1
+  let current = el.parentElement
+  while (current !== null) {
+    if (current.getAttribute('role') === 'group') level += 1
+    current = current.parentElement
+  }
+  return level
 }
 
 describe('VaultNav', () => {
@@ -315,24 +342,22 @@ describe('VaultNav', () => {
     expect(screen.queryAllByRole('group')).toHaveLength(0)
   })
 
-  test('aria-level matches nesting depth', () => {
+  test('nesting depth is conveyed by real DOM structure, not an explicit aria-level', () => {
     renderNav({
       activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
       storageKey: 'nav-level',
     })
 
-    expect(screen.getByRole('treeitem', { name: 'Areas' }).getAttribute('aria-level')).toBe('1')
-    expect(screen.getByRole('treeitem', { name: 'Inbox' }).getAttribute('aria-level')).toBe('1')
-    expect(screen.getByRole('treeitem', { name: 'Gaming' }).getAttribute('aria-level')).toBe('2')
-    expect(screen.getByRole('treeitem', { name: 'Reading' }).getAttribute('aria-level')).toBe('2')
-    expect(
-      screen.getByRole('treeitem', { name: 'League of Legends' }).getAttribute('aria-level'),
-    ).toBe('3')
-    expect(screen.getByRole('treeitem', { name: 'Wild Rift' }).getAttribute('aria-level')).toBe('3')
-    expect(screen.getByRole('treeitem', { name: 'Runes' }).getAttribute('aria-level')).toBe('4')
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Areas' }))).toBe(1)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Inbox' }))).toBe(1)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Gaming' }))).toBe(2)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Reading' }))).toBe(2)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'League of Legends' }))).toBe(3)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Wild Rift' }))).toBe(3)
+    expect(levelOf(screen.getByRole('treeitem', { name: 'Runes' }))).toBe(4)
   })
 
-  test('aria-expanded is present on folders and absent on notes', () => {
+  test('aria-expanded is present on folders and absent on notes (regression guard)', () => {
     renderNav({
       activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
       storageKey: 'nav-expanded-attr',
@@ -367,12 +392,62 @@ describe('VaultNav', () => {
     expect(tabbable[0]).toBe(screen.getByRole('treeitem', { name: 'Reading' }))
   })
 
+  test('the tabbable node follows keyboard focus, not just the first root row (regression guard)', () => {
+    renderNav({ storageKey: 'nav-tabindex-follow' })
+
+    const areas = screen.getByRole('treeitem', { name: 'Areas' })
+    expect(areas.tabIndex).toBe(0)
+
+    const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
+    focusItem(inbox)
+
+    expect(inbox.tabIndex).toBe(0)
+    expect(areas.tabIndex).toBe(-1)
+  })
+
+  test('the tabbable node falls back to the active row when the focused node is unmounted by an ancestor collapsing (regression guard)', () => {
+    renderNav({
+      activePath: 'Areas/Gaming/Wild Rift/Wild Rift.md',
+      storageKey: 'nav-focus-unmount',
+    })
+
+    const runes = screen.getByRole('treeitem', { name: 'Runes' })
+    focusItem(runes)
+    expect(runes.tabIndex).toBe(0)
+
+    // Collapsing `Wild Rift` by its chevron unmounts `Runes`' `<li>` without ever firing a NEW
+    // focus event (nothing else receives focus), so `focusedPath` alone would go stale here — the
+    // bug this guards against left every `<li>` at `tabIndex={-1}`, taking the tree out of the Tab
+    // order entirely.
+    clickChevron('Wild Rift')
+    expect(screen.queryByRole('treeitem', { name: 'Runes' })).toBeNull()
+
+    const tabbable = document.querySelectorAll('[role="treeitem"][tabindex="0"]')
+    expect(tabbable).toHaveLength(1)
+    expect(tabbable[0]).toBe(screen.getByRole('treeitem', { name: 'Wild Rift' }))
+  })
+
+  test('clicking a note that is not activePath does not change which row is selected', () => {
+    renderNav({ activePath: 'Areas/Reading.md', storageKey: 'nav-select-click' })
+
+    const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
+    fireEvent.click(inbox)
+
+    // Selection is derived from the `activePath` PROP, never held internally — a click alone (with
+    // `selectOnClick={false}` and no internal `select`/`toggleSelected` call anywhere in this file)
+    // must not move `aria-selected` on its own; only a new `activePath` from the consumer can.
+    expect(screen.getByRole('treeitem', { name: 'Reading' }).getAttribute('aria-selected')).toBe(
+      'true',
+    )
+    expect(inbox.getAttribute('aria-selected')).toBe('false')
+  })
+
   test('ArrowDown moves focus to the next visible node', () => {
     renderNav({ storageKey: 'nav-arrowdown' })
 
     const areas = screen.getByRole('treeitem', { name: 'Areas' })
     focusItem(areas)
-    fireEvent.keyDown(areas, { key: 'ArrowDown' })
+    fireEvent.keyDown(areas, { key: 'ArrowDown', code: 'ArrowDown' })
 
     expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
   })
@@ -384,14 +459,13 @@ describe('VaultNav', () => {
     })
 
     // `Runes` is four levels down, so its `<li>` is nested inside the `<li>`s for `Wild Rift`,
-    // `Gaming` and `Areas`. `onFocus` is React's binding for `focusin`, which BUBBLES: without a
-    // target check each of those ancestors also reports itself as focused, outermost last, so the
-    // tree believes focus is on `Areas` and ArrowDown walks from there. Measured live before the
-    // fix: every ArrowDown, from any starting row at any depth, landed on `Engineering` — the node
-    // right after `Areas`.
+    // `Gaming` and `Areas`. Mantine's `TreeNode` calls `stopPropagation` on the FIRST handler that
+    // sees the matching `code` — the deepest one, since that's where the DOM event originates — so
+    // this never risks the old hand-rolled bug (every ancestor's `onFocus` reporting itself,
+    // outermost last) at all.
     const runes = screen.getByRole('treeitem', { name: 'Runes' })
     focusItem(runes)
-    fireEvent.keyDown(runes, { key: 'ArrowDown' })
+    fireEvent.keyDown(runes, { key: 'ArrowDown', code: 'ArrowDown' })
 
     expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'League of Legends' }))
   })
@@ -401,7 +475,7 @@ describe('VaultNav', () => {
 
     const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
     focusItem(inbox)
-    fireEvent.keyDown(inbox, { key: 'ArrowUp' })
+    fireEvent.keyDown(inbox, { key: 'ArrowUp', code: 'ArrowUp' })
 
     expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Areas' }))
   })
@@ -411,7 +485,7 @@ describe('VaultNav', () => {
 
     const areas = screen.getByRole('treeitem', { name: 'Areas' })
     focusItem(areas)
-    fireEvent.keyDown(areas, { key: 'ArrowRight' })
+    fireEvent.keyDown(areas, { key: 'ArrowRight', code: 'ArrowRight' })
 
     expect(screen.getByText('Gaming')).toBeDefined()
   })
@@ -421,11 +495,38 @@ describe('VaultNav', () => {
 
     const areas = screen.getByRole('treeitem', { name: 'Areas' })
     focusItem(areas)
-    fireEvent.keyDown(areas, { key: 'ArrowRight' })
+    fireEvent.keyDown(areas, { key: 'ArrowRight', code: 'ArrowRight' })
     expect(screen.getByText('Gaming')).toBeDefined()
 
-    fireEvent.keyDown(areas, { key: 'ArrowLeft' })
+    fireEvent.keyDown(areas, { key: 'ArrowLeft', code: 'ArrowLeft' })
     expect(screen.queryByText('Gaming')).toBeNull()
+  })
+
+  test('ArrowRight on a leaf note does not leak its path into the persisted expanded set', () => {
+    renderNav({ storageKey: 'nav-arrowright-leaf' })
+
+    // Mantine's own ArrowRight handling calls `expand()` on ANY focused node, leaf notes included —
+    // no `hasChildren` guard inside `TreeNode` itself. `handleExpandedStateChange`'s folder filter
+    // is what keeps that from surviving into the persisted `expanded` array.
+    const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
+    focusItem(inbox)
+    fireEvent.keyDown(inbox, { key: 'ArrowRight', code: 'ArrowRight' })
+
+    const stored: unknown = JSON.parse(localStorage.getItem('nav-arrowright-leaf') ?? '[]')
+    expect(stored).not.toContain('Inbox.md')
+  })
+
+  test('Space on a leaf note does not toggle it or leak its path into the persisted expanded set', () => {
+    renderNav({ storageKey: 'nav-space-leaf' })
+
+    // `expandOnSpace={false}` on `<Tree>` is what lets Space bubble to `useTreeKeyboardExtras`'s own
+    // handler at all — that handler's `toggleIfFolder` is the guard under test here, not Mantine's.
+    const inbox = screen.getByRole('treeitem', { name: 'Inbox' })
+    focusItem(inbox)
+    fireEvent.keyDown(inbox, { key: ' ' })
+
+    const stored: unknown = JSON.parse(localStorage.getItem('nav-space-leaf') ?? '[]')
+    expect(stored).not.toContain('Inbox.md')
   })
 
   test('Home jumps to the first visible node', () => {
@@ -464,6 +565,32 @@ describe('VaultNav', () => {
     expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: 'Inbox' }))
   })
 
+  describe('chevron slot', () => {
+    test('a supplied renderChevron is used for a folder chevron', () => {
+      render(
+        <MantineProvider>
+          <VaultProvider
+            index={buildIndex(NOTES)}
+            renderChevron={() => <span data-testid="custom-chevron" />}
+          >
+            <VaultNav storageKey="nav-chevron-custom" />
+          </VaultProvider>
+        </MantineProvider>,
+      )
+
+      const areas = screen.getByRole('treeitem', { name: 'Areas' })
+      expect(within(areas).getByTestId('custom-chevron')).toBeDefined()
+    })
+
+    test('omitting renderChevron falls back to the built-in SVG chevron', () => {
+      renderNav({ storageKey: 'nav-chevron-default' })
+
+      const areas = screen.getByRole('treeitem', { name: 'Areas' })
+      const chevron = within(areas).getByTestId('vault-nav-chevron')
+      expect(chevron.querySelector('svg')).not.toBeNull()
+    })
+  })
+
   describe('icon slot', () => {
     const renderIcon = (iconName: string) => (
       <span data-testid={`icon-${iconName}`}>{iconName}</span>
@@ -481,7 +608,7 @@ describe('VaultNav', () => {
       expect(screen.getByTestId('icon-LiInbox')).toBeDefined()
     })
 
-    test('renders nothing for a node with no icon, even when renderIcon is supplied', () => {
+    test('falls back to the built-in icon for a node with no Iconize icon, even when renderIcon is supplied', () => {
       render(
         <MantineProvider>
           <VaultProvider index={buildIconIndex()} renderIcon={renderIcon}>
@@ -492,13 +619,15 @@ describe('VaultNav', () => {
 
       // Expand 'Areas' (which has an icon) so its child 'Engineering' (which does NOT) is visible.
       clickChevron('Areas')
-      expect(screen.getByRole('treeitem', { name: 'Engineering' })).toBeDefined()
-      expect(screen.getByTestId('icon-LiLightbulb')).toBeDefined()
-      // Exactly 'Areas' (LiLightbulb) and 'Inbox' (LiInbox) — 'Engineering' contributes none.
+      const engineering = screen.getByRole('treeitem', { name: 'Engineering' })
+      expect(engineering).toBeDefined()
+      // Exactly 'Areas' (LiLightbulb) and 'Inbox' (LiInbox) carry the CONSUMER icon — 'Engineering'
+      // contributes none of those, but still gets the package's own built-in fallback glyph.
       expect(screen.getAllByTestId(/^icon-/)).toHaveLength(2)
+      expect(engineering.querySelector('svg')).not.toBeNull()
     })
 
-    test('renders nothing when the node has an icon but no renderIcon was supplied', () => {
+    test('falls back to the built-in icon when the node has an icon but no renderIcon was supplied', () => {
       render(
         <MantineProvider>
           <VaultProvider index={buildIconIndex()}>
@@ -508,6 +637,7 @@ describe('VaultNav', () => {
       )
 
       expect(screen.queryByTestId(/^icon-/)).toBeNull()
+      expect(screen.getByRole('treeitem', { name: 'Inbox' }).querySelector('svg')).not.toBeNull()
     })
 
     test('the icon is aria-hidden and does not contribute to the row accessible name', () => {
@@ -522,8 +652,9 @@ describe('VaultNav', () => {
       const icon = screen.getByTestId('icon-LiInbox')
       expect(icon.closest('[aria-hidden="true"]')).not.toBeNull()
 
-      // The row's accessible name comes from aria-labelledby -> RowLabel's id, i.e. just "Inbox" —
-      // it must not also read "LiInbox" from the hidden icon span.
+      // The row's accessible name comes from content ("name from content" for `role="treeitem"`,
+      // since chevron and icon both stay `aria-hidden`) — it must not also read "LiInbox" from the
+      // hidden icon span.
       expect(screen.getByRole('treeitem', { name: 'Inbox' })).toBeDefined()
     })
   })
