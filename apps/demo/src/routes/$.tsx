@@ -8,7 +8,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Stack, useMantineTheme } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
 import { EmptyState } from 'basalt-ui'
-import { Backlinks, NoteView, useVault } from 'basalt-ui-obsidian'
+import { Backlinks, NoteView, recordNoteView, useVault } from 'basalt-ui-obsidian'
 import type { VaultNote } from 'obsidian-vault-core'
 
 // The vault carries no language field, so `document.documentElement.lang` is inferred rather than
@@ -66,6 +66,13 @@ function NotePage() {
       document.title = DEFAULT_TITLE
       document.documentElement.lang = DEFAULT_LANG
     }
+  }, [note])
+
+  // Fills the Recent panel's "Viewed" tab (`VaultRecentPanel`, `useRecentlyViewed`) — one call per
+  // note actually rendered, not per navigation attempt, so a 404'd slug never counts as a view.
+  useEffect(() => {
+    if (!note) return
+    recordNoteView(note.path)
   }, [note])
 
   if (!note) {

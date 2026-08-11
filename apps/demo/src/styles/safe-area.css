@@ -20,31 +20,6 @@ body {
 }
 
 /*
- * Same env() approach as `body` above, reused where the mobile note-tree drawer (`routes/__root.tsx`)
- * meets a physical screen edge. The `body` rule above only reaches NORMAL-FLOW descendants — a
- * `position: fixed` element (which Mantine's `Drawer` is, like `BasaltShell`'s own fixed
- * header/navbar) positions relative to the viewport and ignores an ancestor's padding entirely, so
- * a left-edge overlay drawer needs its own insets rather than inheriting `body`'s.
- */
-.vault-nav-drawer-body {
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/*
- * The drawer's `padding={0}` (routes/__root.tsx) exists for the BODY — the tree supplies its own
- * `p="sm"` and a doubled inset wastes phone width — but Mantine feeds that one prop to the header
- * too, which left the "Notes" title and its close button flush against the screen edges. Restore
- * the header's own inset here, safe-area included, instead of raising `padding` and re-indenting
- * the tree.
- */
-.vault-nav-drawer-header {
-  padding: var(--mantine-spacing-sm) calc(var(--mantine-spacing-md) + env(safe-area-inset-right, 0px))
-    var(--mantine-spacing-sm) calc(var(--mantine-spacing-md) + env(safe-area-inset-left, 0px));
-}
-
-/*
  * `BasaltShell`'s own fixed chrome (header, navbar, footer) lays out against the viewport, not
  * `body` — an ancestor's padding (the `body` rule above) never reaches a `position: fixed`
  * descendant, so each needs its own inset. Additive on top of the shell's existing fixed
@@ -80,11 +55,12 @@ header.mantine-AppShell-header {
 }
 
 /*
- * Mobile bottom action bar (routes/__root.tsx) — three direct actions (home, note tree, search)
- * replacing `BasaltShell`'s own built-in mobile nav, whose "Vault" tab opened a sheet with just the
- * Home link and whose "More" tab duplicated it via the full navbar overlay. Occupies the same 52px
- * footer slot `BasaltShell` already reserves (`footer={{ height: { base: 52, sm: 0 } }}`), so
- * `AppShell.Main`'s own bottom padding needs no change.
+ * Mobile bottom tab bar (routes/__root.tsx) — five browse-route destinations (Tree, Search, Tags,
+ * Bookmarks, Recent), each a full page reached via a real router `<Link>`, replacing `BasaltShell`'s
+ * own built-in mobile nav, whose "Vault" tab opened a sheet with just the Home link and whose "More"
+ * tab duplicated it via the full navbar overlay. Occupies the same 52px footer slot `BasaltShell`
+ * already reserves (`footer={{ height: { base: 52, sm: 0 } }}`), so `AppShell.Main`'s own bottom
+ * padding needs no change.
  */
 .mobile-shell-tabbar {
   position: fixed;
@@ -99,6 +75,12 @@ header.mantine-AppShell-header {
   border-top: 1px solid var(--mantine-color-default-border);
 }
 
+/*
+ * Five tabs at a 390px viewport give ~78px each — comfortable room for the 10.5px label below, same
+ * as the three-tab layout this replaced (each of those got ~130px). `min-width: 0` still matters: a
+ * flex item's default `min-width: auto` would let a longer label ("Bookmarks") refuse to shrink
+ * below its own content width and blow out the row.
+ */
 .mobile-shell-tab {
   flex: 1 1 0;
   min-width: 0;
@@ -109,6 +91,17 @@ header.mantine-AppShell-header {
   justify-content: center;
   gap: 2px;
   color: var(--mantine-color-dimmed);
+  /* The Tree tab is a router `<Link>`, i.e. a real `<a>`, and basalt's prose defaults underline bare
+   * anchors. Chrome bar labels are not prose — measured live, all five labels rendered underlined. */
+  text-decoration: none;
+}
+
+/* The active tab (`aria-current="page"`/`data-active`, set in `routes/__root.tsx` from
+ * `useBasaltNav().isActive`) gets the plain foreground ink color, no background pill — a position
+ * marker, not a call to action, same "ink earns its color" idiom `panel.module.css`'s own
+ * `.row[data-active='true']` documents for the sidebar panels. */
+.mobile-shell-tab[data-active] {
+  color: var(--mantine-color-text);
 }
 
 .mobile-shell-tab-label {

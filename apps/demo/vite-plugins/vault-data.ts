@@ -17,9 +17,13 @@
  * complexity here, and a `readVault` pass is cheap enough (~750 KB of markdown) that "restart to
  * refresh" is the right tradeoff for a demo app.
  */
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import { readVault } from 'obsidian-vault-core'
 import { buildSearchIndex, serializeSearchIndex, toVaultBundle } from 'obsidian-vault-core/search'
 import type { Plugin } from 'vite'
+
+const execFileAsync = promisify(execFile)
 
 // Deliberately no default. A hardcoded absolute path leaks a username and directory layout into
 // git (see rules/security.md), and on a fresh clone it would silently read whatever happens to sit
@@ -37,10 +41,74 @@ type VaultData = {
   readonly noteCount: number
 }
 
+/** A git timestamp line from `--pretty=format:%ct` — seconds since the epoch, on its own line. */
+const GIT_TIMESTAMP_LINE = /^\d{9,}$/
+
+/**
+ * Vault-relative path -> the commit time of the newest commit that touched it, in epoch ms.
+ *
+ * `VaultNote.mtime` is the filesystem mtime, which is the wrong clock for a "Recent" surface on a
+ * git-backed vault: this vault is cloned and pulled by a sync agent, so every file's mtime is the
+ * moment that machine last wrote it, not the moment its content was edited. Measured live before
+ * this ran: all 106 notes reported the same "3d", making the Updated tab a stable but meaningless
+ * ordering. Commit time is the editorial clock and is what a reader actually means by recent.
+ *
+ * One `git log` pass over the whole history, not one call per note. Newest commit first, so the
+ * FIRST time a path appears is its newest — later occurrences are ignored. `core.quotePath=false`
+ * matters: the default escapes non-ASCII bytes (`Ernährungsplan.md` comes back as
+ * `"Ern\303\244hrungsplan.md"`), which would silently miss every umlaut note in this vault.
+ *
+ * Not a vault-core concern — nothing in that package assumes a vault is a git repo, and this app's
+ * one is. A non-repo (or no `git`) yields an empty map and every note keeps its filesystem mtime.
+ */
+async function gitEditTimes(vaultDir: string): Promise<ReadonlyMap<string, number>> {
+  const times = new Map<string, number>()
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      [
+        '-C',
+        vaultDir,
+        '-c',
+        'core.quotePath=false',
+        'log',
+        '--no-merges',
+        '--name-only',
+        '--pretty=format:%ct',
+      ],
+      { maxBuffer: 128 * 1024 * 1024 },
+    )
+    let seconds = 0
+    for (const line of stdout.split('\n')) {
+      if (line === '') continue
+      if (GIT_TIMESTAMP_LINE.test(line)) {
+        seconds = Number(line)
+        continue
+      }
+      if (!times.has(line)) times.set(line, seconds * 1000)
+    }
+  } catch {
+    return new Map()
+  }
+  return times
+}
+
 async function loadVaultData(vaultDir: string): Promise<VaultData> {
   const index = await readVault(vaultDir)
+  const editTimes = await gitEditTimes(vaultDir)
+
+  // Patching the BUNDLE, not the index: `toVaultBundle` is where every note appears exactly once
+  // (the tree ships paths and is relinked client-side — see that function's own doc), so this is
+  // one pass over one array rather than a rewrite of four aliased views. Nothing else reads
+  // `mtime`; the search index doesn't rank on it.
+  const bundle = toVaultBundle(index)
+  const notes = bundle.notes.map((note) => {
+    const edited = editTimes.get(note.path)
+    return edited === undefined ? note : { ...note, mtime: edited }
+  })
+
   return {
-    vaultJson: JSON.stringify(toVaultBundle(index)),
+    vaultJson: JSON.stringify({ ...bundle, notes }),
     searchJson: serializeSearchIndex(buildSearchIndex(index)),
     noteCount: index.notes.length,
   }
