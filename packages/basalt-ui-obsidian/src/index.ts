@@ -36,6 +36,24 @@ export type {
   VaultSpotlightAction,
 } from './nav/use-vault-search.js'
 
+// Five reusable vault navigation panels — the shared body of both the desktop sidebar and a
+// consumer's own mobile routes. Each is a flat, unstyled-container list a consumer wraps in its own
+// scroll area; see `panels/panel.module.css`'s own doc for the row-chrome contract they share.
+export { NoteList, NoteRow } from './panels/note-list.js'
+export type { NoteListProps, NoteRowProps } from './panels/note-list.js'
+export { VaultTreePanel } from './panels/tree-panel.js'
+export type { VaultTreePanelProps } from './panels/tree-panel.js'
+export { VaultTagsPanel } from './panels/tags-panel.js'
+export type { VaultTagsPanelProps } from './panels/tags-panel.js'
+export { VaultBookmarksPanel } from './panels/bookmarks-panel.js'
+export type { VaultBookmarksPanelProps } from './panels/bookmarks-panel.js'
+export { VaultRecentPanel } from './panels/recent-panel.js'
+export type { VaultRecentPanelProps } from './panels/recent-panel.js'
+export { recordNoteView, useRecentlyViewed } from './panels/use-recently-viewed.js'
+export type { RecentView } from './panels/use-recently-viewed.js'
+export { VaultSearchPanel } from './panels/search-panel.js'
+export type { VaultSearchPanelProps } from './panels/search-panel.js'
+
 // The sanitize schema is public because basalt-ui's `Markdown` runs `rehype-sanitize` LAST and
 // unconditionally: without these additions the `data-callout*` / `data-wikilink` / `width` /
 // `height` attributes this package emits are stripped before they reach a component override.

@@ -162,12 +162,27 @@ export type VaultNavProps = {
    * mobile drawer wires this to close itself on navigation; the desktop aside instance leaves it
    * unset. Never fires for a chevron toggle (expanding a folder isn't navigating). */
   readonly onNavigate?: () => void
+  /** Renders each folder row's recursive note count, right-aligned and dimmed — see `VaultNavRow`'s
+   * count span. Default `false` so every existing caller renders exactly as before. `panels/
+   * tree-panel.tsx`'s `VaultTreePanel` passes `true`. */
+  readonly showCounts?: boolean
 }
 
-/** The note that makes `node`'s own row navigable — a child note whose basename === the folder's name. */
-function folderNoteOf(node: VaultTreeNode): VaultNote | undefined {
+/** The note that makes `node`'s own row navigable — a child note whose basename === the folder's name.
+ * Exported for `panels/bookmarks-panel.tsx`, which applies the same folder-note rule to decide
+ * whether a `folder`-type bookmark links anywhere — one implementation, so the two can't disagree. */
+export function folderNoteOf(node: VaultTreeNode): VaultNote | undefined {
   return node.children?.find((child) => child.kind === 'note' && child.note?.basename === node.name)
     ?.note
+}
+
+/** Recursive note count under `node`, folder-notes included (counted once, as a note — not doubled
+ * for also making their folder navigable). Exported for `panels/tree-panel.tsx`'s summary strip,
+ * which needs the same count `VaultNav`'s own `showCounts` row optionally shows — one
+ * implementation, not two that could quietly disagree on what counts as "in" a folder. */
+export function countNotes(node: VaultTreeNode): number {
+  if (node.kind === 'note') return node.note === undefined ? 0 : 1
+  return (node.children ?? []).reduce((sum, child) => sum + countNotes(child), 0)
 }
 
 type VisibleChildren = {
@@ -215,6 +230,9 @@ type TreeBuildResult = {
   readonly hasChildrenByPath: ReadonlyMap<string, boolean>
   readonly selectableValueByPath: ReadonlyMap<string, string>
   readonly labelIdByPath: ReadonlyMap<string, string>
+  /** Every folder's own `countNotes(node)` result, keyed by path — see `VaultNavRow`'s count span
+   * for why this is read from here instead of calling `countNotes` per row per render. */
+  readonly folderCountsByPath: ReadonlyMap<string, number>
 }
 
 function buildTreeNodeData(
@@ -223,6 +241,7 @@ function buildTreeNodeData(
   namesByPath: Map<string, string>,
   hasChildrenByPath: Map<string, boolean>,
   selectableValueByPath: Map<string, string>,
+  folderCountsByPath: Map<string, number>,
 ): TreeNodeData[] {
   const out: TreeNodeData[] = []
   for (const node of nodes) {
@@ -239,6 +258,7 @@ function buildTreeNodeData(
     nodesByPath.set(node.path, node)
     namesByPath.set(node.path, node.name)
     hasChildrenByPath.set(node.path, children.length > 0)
+    folderCountsByPath.set(node.path, countNotes(node))
     if (folderNote !== undefined) selectableValueByPath.set(folderNote.path, node.path)
     const childData = buildTreeNodeData(
       children,
@@ -246,6 +266,7 @@ function buildTreeNodeData(
       namesByPath,
       hasChildrenByPath,
       selectableValueByPath,
+      folderCountsByPath,
     )
     out.push({
       value: node.path,
@@ -452,6 +473,10 @@ type VaultNavRowProps = {
   readonly onToggle: () => void
   readonly onNavigate: (() => void) | undefined
   readonly reduceMotion: boolean
+  readonly showCounts: boolean
+  /** Folder-only — `folderCountsByPath.get(vaultNode.path)`, precomputed once per tree build rather
+   * than walked here. Unused when `vaultNode.kind === 'note'`. */
+  readonly count: number | undefined
 }
 
 /** The content Mantine's `TreeNode` renders INSIDE its own `<li>` — see the module doc for why this
@@ -465,6 +490,8 @@ function VaultNavRow({
   onToggle,
   onNavigate,
   reduceMotion,
+  showCounts,
+  count,
 }: VaultNavRowProps) {
   const { hrefFor, renderLink, renderIcon, renderChevron } = useVault()
 
@@ -522,6 +549,26 @@ function VaultNavRow({
       ) : (
         <RowLabel id={labelId} label={vaultNode.name} color={color} weight={600} />
       )}
+      {showCounts && (
+        // `aria-hidden`: the row's accessible name is already computed via `aria-labelledby`
+        // (`useTreeItemA11ySync`, pointing at `labelId`) — appending a bare number here without it
+        // would still be excluded from that computation, but stamping it anyway keeps this span
+        // inert under any future a11y-name strategy too, not just today's. `margin-left: auto`
+        // pins it to the row's right edge regardless of whether the label side is a link or plain
+        // text (both are `flex: 1` already).
+        <span
+          aria-hidden="true"
+          style={{
+            marginLeft: 'auto',
+            flexShrink: 0,
+            fontSize: 11,
+            fontVariantNumeric: 'tabular-nums',
+            color: VX.muted,
+          }}
+        >
+          {count}
+        </span>
+      )}
     </div>
   )
 }
@@ -531,6 +578,7 @@ export function VaultNav({
   storageKey = 'basalt-ui-obsidian:vault-nav-expanded',
   className,
   onNavigate,
+  showCounts = false,
 }: VaultNavProps) {
   const { index } = useVault()
   const rootRef = useRef<HTMLUListElement>(null)
@@ -548,17 +596,20 @@ export function VaultNav({
     hasChildrenByPath,
     selectableValueByPath,
     labelIdByPath,
+    folderCountsByPath,
   } = useMemo<TreeBuildResult>(() => {
     const nodesByPath = new Map<string, VaultTreeNode>()
     const namesByPath = new Map<string, string>()
     const hasChildrenByPath = new Map<string, boolean>()
     const selectableValueByPath = new Map<string, string>()
+    const folderCountsByPath = new Map<string, number>()
     const data = buildTreeNodeData(
       index.tree.children ?? [],
       nodesByPath,
       namesByPath,
       hasChildrenByPath,
       selectableValueByPath,
+      folderCountsByPath,
     )
     // Index-based, not derived from the path's characters — see the module doc's `aria-labelledby`
     // paragraph: two distinct legal vault paths can sanitize to the same string, which would collide
@@ -577,6 +628,7 @@ export function VaultNav({
       hasChildrenByPath,
       selectableValueByPath,
       labelIdByPath,
+      folderCountsByPath,
     }
   }, [index.tree, reactId])
 
@@ -653,10 +705,12 @@ export function VaultNav({
           onToggle={() => tree.toggleExpanded(payload.node.value)}
           onNavigate={onNavigate}
           reduceMotion={reduceMotion}
+          showCounts={showCounts}
+          count={folderCountsByPath.get(payload.node.value)}
         />
       )
     },
-    [nodesByPath, labelIdByPath, tree, onNavigate, reduceMotion],
+    [nodesByPath, labelIdByPath, tree, onNavigate, reduceMotion, showCounts, folderCountsByPath],
   )
 
   // Single delegated focus tracker — `focusin` bubbles, and with exactly one listener (at the tree

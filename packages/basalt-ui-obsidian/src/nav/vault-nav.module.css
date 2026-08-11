@@ -156,7 +156,18 @@
  */
 @media (pointer: coarse) {
   .chevron {
+    position: relative;
     width: 28px;
-    height: 32px;
+    height: 26px;
+  }
+
+  /* The extra 3px top and bottom is an invisible overlay, NOT layout. Sizing the box itself to 32px
+   * made the chevron — not `.row`'s own `min-height` — the tallest thing in a folder row, so every
+   * folder measured 38px (26 + the row's 3px vertical padding twice) against the 32px this density
+   * pass had settled on. Measured live at 393px before the fix. The hit box is still 28x32. */
+  .chevron::after {
+    content: '';
+    position: absolute;
+    inset: -3px 0;
   }
 }

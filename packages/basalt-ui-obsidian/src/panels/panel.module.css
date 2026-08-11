@@ -1,0 +1,179 @@
+/*
+ * Shared row chrome for every panel in `src/panels/` — the SAME metrics as `vault-nav.module.css`
+ * (row height, hover/active tint, focus ring; see that file's own doc for the full rationale on
+ * each), duplicated here rather than imported because panels are plain flat lists, not a tree:
+ * there is no `<li role="treeitem">`/roving-tabindex layer to hang a `.item:focus-visible > .row`
+ * rule off. A panel row's OWN interactive child — a rendered `<a>` for a navigable row, a real
+ * `<button>` for a toggle/filter row — is what actually receives keyboard focus, so the focus ring
+ * lives directly on `.anchorReset a` / `.rowButton` instead.
+ *
+ * `--vault-panel-hover-ink` mirrors `vault-nav.module.css`'s `--vault-nav-hover-ink` trick: `.row`
+ * sets it on `:hover`, and `note-list.tsx`'s title color reads it via `var(--vault-panel-hover-ink,
+ * <resting shade>)` so an ancestor's hover reaches a descendant's inline `color` through the normal
+ * custom-property cascade.
+ */
+.anchorReset {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.anchorReset a {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.anchorReset a:focus-visible {
+  outline: 2px solid var(--vx-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: transparent;
+  transition: background-color 120ms ease;
+}
+
+.row:hover {
+  background-color: color-mix(in srgb, var(--vx-ink) 6%, transparent);
+  --vault-panel-hover-ink: var(--vx-ink);
+}
+
+/* Same neutral-fill treatment as `vault-nav.module.css`'s `.row[data-active='true']` — a position
+ * marker, not a call to action. See that file's own doc for why an accent tint is deliberately
+ * avoided here. */
+.row[data-active='true'] {
+  background-color: color-mix(in srgb, var(--vx-ink) 11%, transparent);
+}
+
+@media (pointer: coarse) {
+  .row {
+    min-height: 32px;
+  }
+}
+
+/* Reset a native `<button>` down to `.row`'s own look — used for rows that toggle/filter/select
+ * rather than navigate (a tag, a bookmark group header, a saved search). */
+.rowButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.rowButton:hover {
+  background-color: color-mix(in srgb, var(--vx-ink) 6%, transparent);
+}
+
+.rowButton:focus-visible {
+  outline: 2px solid var(--vx-accent);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .rowButton {
+    min-height: 32px;
+  }
+}
+
+.title {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vx-ink);
+}
+
+/* Only for a title that shares its row with a `.folderPath` (a note row, `note-list.tsx`). `.title`
+ * defaults to `flex: 1` so it pushes a trailing `.meta` — a tag's note count, a folder's — hard to
+ * the right edge; when a folder follows, THAT element takes over the free space instead and the
+ * title falls back to its content width. Measured live: without this split the tag panel's counts
+ * detached from the right edge and sat against their tag names. */
+.titleShrink {
+  flex: 0 1 auto;
+}
+
+/*
+ * The folder sits INLINE after the title on the same row, not on a second line beneath it. A
+ * second line pushed every note row to 40px (44px coarse) — against 32px for the tree's own rows —
+ * and in a list where most notes share a folder ("Areas/Photography" under six consecutive rows)
+ * it spent that height on the least distinguishing part of the row. `flex: 1 1 0` next to a
+ * `flex: 0 1 auto` title is what encodes the priority: the folder absorbs the free space and is
+ * also the first thing to shrink away when a long title needs it.
+ *
+ * Ellipsised from the LEFT, not the right: a note's own folder tail is what
+ * disambiguates it from a same-titled note elsewhere in the vault, so that's the part that must
+ * stay visible when the line is too long for the row. `direction: rtl` flips which edge the
+ * browser truncates from — the box anchors the string to its right (visually the end, nearest the
+ * title above it) and clips overflow from the left — while `unicode-bidi: plaintext` keeps the
+ * Latin path segments themselves reading left-to-right (this text has no actual RTL script in it,
+ * so the bidi algorithm's own paragraph-direction detection would otherwise fight the forced
+ * `direction: rtl` and could reorder the `/`-separated segments). `text-align: left` then matches
+ * the FLIPPED direction's own "start" back to the box's left edge for the un-truncated case.
+ */
+.folderPath {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  unicode-bidi: plaintext;
+  font-size: 11px;
+  color: var(--vx-muted);
+}
+
+.meta {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--vx-muted);
+}
+
+/*
+ * Sticky to whatever scroll container the CONSUMER wraps this panel in — see the module docs across
+ * this folder: panels own no scroll container of their own. `background-color` is opaque so rows
+ * scrolling underneath don't show through; `color` is `--vx-ink` blended toward transparent (not a
+ * raw `opacity`, which would also fade that background and defeat the point) — the same
+ * `color-mix` idiom `vault-nav.module.css` already uses for its own dimmed/active treatments.
+ */
+.sectionHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 8px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--vx-ink) 60%, transparent);
+  background-color: var(--vx-surface-bg);
+}
+
+.emptyLabel {
+  padding: 16px 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--vx-muted);
+}
