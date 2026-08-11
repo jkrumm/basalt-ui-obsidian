@@ -210,11 +210,20 @@ function RootLayout() {
         <Box p="md">
           <Outlet />
         </Box>
+        {/* Full width, not a 280px panel. This drawer is only ever reachable from the mobile tab
+            bar (`hiddenFrom="sm"` below), so its whole audience is a ~390px phone — where 280px
+            left a dead ~110px sliver of dimmed, unreadable, untappable content on the right, and
+            spent the vault's deepest paths on a column narrower than the screen that was already
+            truncating folder names. At 100% it stops being a panel overlaying a page and reads as
+            the note-tree SCREEN, which is what it functionally is: you open it, you pick a note,
+            it closes. `transitionProps` keeps the slide-in short enough that a full-bleed surface
+            doesn't feel heavy on every open. */}
         <Drawer
           opened={drawerOpened}
           onClose={closeDrawer}
           position="left"
-          size={280}
+          size="100%"
+          transitionProps={{ duration: 180 }}
           padding={0}
           title="Notes"
           // `padding={0}` is for the BODY — the tree brings its own `p="sm"` below and a doubled
