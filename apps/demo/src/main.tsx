@@ -14,6 +14,7 @@ import { BasaltOverlays } from 'basalt-ui/commands'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { queryClient } from './lib/query-client'
+import { registerServiceWorker } from './lib/sw-update'
 import { routeTree } from './routeTree.gen'
 
 const router = createRouter({ routeTree })
@@ -23,6 +24,11 @@ declare module '@tanstack/react-router' {
     router: typeof router
   }
 }
+
+// Before render, not after: `registerSW({ immediate: true })` should be in flight while React
+// mounts, so a tab opened moments after a deploy picks the new worker up on this load rather than
+// the next one.
+registerServiceWorker()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('root element not found')

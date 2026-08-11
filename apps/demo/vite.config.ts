@@ -45,6 +45,12 @@ export default mergeConfig(
         themeColor: 'auto',
         display: 'standalone',
         serviceWorker: {
+          // Overrides `basaltAppPlugin`'s `injectRegister: 'auto'`. That default emits a
+          // `registerSW.js` that only calls `navigator.serviceWorker.register` — no update polling
+          // and no reaction when a new worker claims the page, which is why a deploy did not reach
+          // an already-open tab. `src/lib/sw-update.ts` registers through `virtual:pwa-register`
+          // instead and owns both halves; see its module doc.
+          injectRegister: null,
           workbox: {
             // The whole corpus (app shell + vault content) is ~750 KB across ~110 notes — smaller
             // than a typical app-shell bundle on its own, so precache everything (json included, for
