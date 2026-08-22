@@ -1,10 +1,13 @@
 /**
  * `BROWSE_SURFACES` — the five vault browse panels (Tree/Search/Tags/Bookmarks/Recent), in
- * tab-bar/tab-strip order. Single source of truth for `routes/__root.tsx`'s mobile bottom tab bar
- * and `components/sidebar-panels.tsx`'s desktop sidebar strip — both used to hand-duplicate this
- * same list of labels, icons and order with nothing enforcing agreement between them. Each consumer
- * still derives its OWN shape from `key` (a router `<Link>` href vs. a `useState` switch value)
- * rather than sharing a data structure neither can fully express.
+ * tab-strip order. It backs `components/sidebar-panels.tsx`'s desktop strip, whose tabs switch a
+ * LOCAL panel rather than navigating.
+ *
+ * The routed counterpart is `./nav.tsx`'s `defineNav` definition, which basalt-ui's shell renders as
+ * both the sidebar nav section and the mobile bottom bar. The two are deliberately NOT one data
+ * structure: `defineNav` needs literal `to` values for TanStack's compile-time route validation, and
+ * this one needs a `useState` switch value — the same five names, two shapes neither can express for
+ * the other.
  */
 import type { LucideIcon } from 'lucide-react'
 import { Bookmark, Clock, ListTree, Search, Tags } from 'lucide-react'

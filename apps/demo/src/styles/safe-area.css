@@ -34,7 +34,9 @@ nav.mantine-AppShell-navbar {
  * Delete the app-shell header entirely, at every breakpoint. Measured live: desktop's whole
  * content was a `Vault / Home` breadcrumb the sidebar navbar (`sections` prop, `__root.tsx`)
  * already shows, highlighted, 216px to the left; mobile's was only the back-button/title row this
- * app portalled in (now removed, see `apps/demo/src/routes/$.tsx`). `BasaltShell` has no
+ * app portalled in (now removed, see `apps/demo/src/routes/$.tsx`). Since basalt-ui 1.19 the mobile
+ * navbar drawer the burger used to open does not exist at all — the shell's own bottom bar navigates
+ * instead — so nothing on this header is reachable-only-here. `BasaltShell` has no
  * header prop — its height is hard-coded from the density scale — so this uses Mantine's own
  * AppShell CSS variables, the same supported escape hatch `basalt-ui` itself uses for its
  * `@media print` header suppression (`basalt-ui/src/styles.css`). Both variables, not just
@@ -55,99 +57,21 @@ header.mantine-AppShell-header {
 }
 
 /*
- * Mobile bottom tab bar (routes/__root.tsx) — five browse-route destinations (Tree, Search, Tags,
- * Bookmarks, Recent), each a full page reached via a real router `<Link>`, replacing `BasaltShell`'s
- * own built-in mobile nav, whose "Vault" tab opened a sheet with just the Home link and whose "More"
- * tab duplicated it via the full navbar overlay. Occupies the same 52px footer slot `BasaltShell`
- * already reserves (`footer={{ height: { base: 52, sm: 0 } }}`), so `AppShell.Main`'s own bottom
- * padding needs no change.
- */
-.mobile-shell-tabbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: var(--mantine-z-index-app, 100);
-  display: flex;
-  height: 52px;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background-color: var(--mantine-color-body);
-  border-top: 1px solid var(--mantine-color-default-border);
-}
-
-/*
- * Five tabs at a 390px viewport give ~78px each — comfortable room for the 10.5px label below, same
- * as the three-tab layout this replaced (each of those got ~130px). `min-width: 0` still matters: a
- * flex item's default `min-width: auto` would let a longer label ("Bookmarks") refuse to shrink
- * below its own content width and blow out the row.
- */
-.mobile-shell-tab {
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  color: var(--mantine-color-dimmed);
-  /* The Tree tab is a router `<Link>`, i.e. a real `<a>`, and basalt's prose defaults underline bare
-   * anchors. Chrome bar labels are not prose — measured live, all five labels rendered underlined. */
-  text-decoration: none;
-}
-
-/* The active tab (`aria-current="page"`/`data-active`, set in `routes/__root.tsx` from
- * `useBasaltNav().isActive`) gets the plain foreground ink color, no background pill — a position
- * marker, not a call to action, same "ink earns its color" idiom `panel.module.css`'s own
- * `.row[data-active='true']` documents for the sidebar panels. */
-.mobile-shell-tab[data-active] {
-  color: var(--mantine-color-text);
-}
-
-.mobile-shell-tab-label {
-  font-size: var(--vx-text-micro, 10.5px);
-  line-height: 1;
-  font-weight: 500;
-}
-
-/*
- * The vendored bar this replaces (see `.mobile-shell-tabbar` above) — its "Vault"/"More" tabs never
- * reached the actual note tree, so it's fully superseded rather than shown alongside it.
- *
- * Hiding the FOOTER, not just the `nav` inside it. Hiding only the nav left the footer element
- * itself in the layout: same `position: fixed`, same bottom inset, the same `z-index: 100`, an
- * opaque `--mantine-color-body` background, and later in the DOM than the tab bar — so it painted
- * a blank 52px band straight over `.mobile-shell-tabbar` and swallowed every tap. Measured live:
- * both boxes resolved to the identical rect, and `elementFromPoint` over the "Vault" tab returned
- * the footer. The phone had no route to the note tree at all.
- *
- * `--app-shell-footer-offset` is deliberately NOT zeroed the way the header block above zeroes its
- * two variables: `AppShell.Main`'s bottom padding reads that offset, and the tab bar genuinely
- * occupies those 52px. The header is deleted; the footer is only re-skinned, so its reserved space
- * has to survive. Its safe-area inset moves with it — `.mobile-shell-tabbar` carries its own
- * `padding-bottom: env(safe-area-inset-bottom)` above.
- */
-footer.mantine-AppShell-footer {
-  display: none;
-}
-
-/*
  * WCAG 2.5.5/2.5.8 target-size floor for touch input, scoped to the shell chrome this repo owns
- * (header/navbar/mobile-tab-bar controls, e.g. the sidebar's 28x28 mobile "Close navigation"
- * button and the 32px-tall search trigger) rather than every `<button>` site-wide: a blanket rule
- * would also expand the hit area of note-tree/TOC rows rendered by `basalt-ui-obsidian` (out of
- * this fix's ownership), and those sit close enough together that overlapping invisible hit areas
- * would misroute taps between adjacent rows — a worse regression than the violation itself. The
- * expansion is an invisible, centered hit area (not a visual resize), so the control's own size is
- * unchanged everywhere it applies.
+ * (header/sidebar controls, e.g. the 32px-tall search trigger) rather than every `<button>`
+ * site-wide: a blanket rule would also expand the hit area of note-tree/TOC rows rendered by
+ * `basalt-ui-obsidian` (out of this fix's ownership), and those sit close enough together that
+ * overlapping invisible hit areas would misroute taps between adjacent rows — a worse regression
+ * than the violation itself. The expansion is an invisible, centered hit area (not a visual
+ * resize), so the control's own size is unchanged everywhere it applies. The mobile bottom bar is
+ * deliberately absent from the list: basalt-ui 1.19 carries its own 44px
+ * `--vx-space-mobile-nav-row-height` floor.
  */
 @media (pointer: coarse) {
   header button,
   header a,
   nav.mantine-AppShell-navbar button,
   nav.mantine-AppShell-navbar a,
-  .mobile-shell-tabbar button,
-  .mobile-shell-tabbar a,
   [aria-label='Close navigation'],
   [aria-label='Open search'] {
     position: relative;
@@ -157,8 +81,6 @@ footer.mantine-AppShell-footer {
   header a::after,
   nav.mantine-AppShell-navbar button::after,
   nav.mantine-AppShell-navbar a::after,
-  .mobile-shell-tabbar button::after,
-  .mobile-shell-tabbar a::after,
   [aria-label='Close navigation']::after,
   [aria-label='Open search']::after {
     content: '';
