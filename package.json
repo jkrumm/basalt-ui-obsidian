@@ -7,11 +7,11 @@
   ],
   "type": "module",
   "scripts": {
-    "fmt": "oxfmt --ignore-path=.gitignore packages *.json *.md",
-    "fmt:check": "oxfmt --check --ignore-path=.gitignore packages *.json *.md",
+    "fmt": "oxfmt --ignore-path=.gitignore packages apps *.json *.md",
+    "fmt:check": "oxfmt --check --ignore-path=.gitignore packages apps *.json *.md",
     "format": "bun run fmt",
     "lint": "oxlint",
-    "typecheck": "bun --filter obsidian-vault-core --filter basalt-ui-obsidian typecheck",
+    "typecheck": "bun --filter '*' typecheck",
     "test": "bun test",
     "build": "bun --filter obsidian-vault-core build && bun --filter basalt-ui-obsidian build",
     "pre": "bun run fmt:check && bun run lint && bun run typecheck && bun run test",
@@ -22,6 +22,7 @@
     "@happy-dom/global-registrator": "20.11.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/react": "16.3.2",
+    "basalt-ui": "1.19.1",
     "happy-dom": "20.11.1",
     "oxfmt": "0.53.0",
     "oxlint": "1.77.0",
@@ -30,5 +31,11 @@
     "react-dom": "19.2.7",
     "tsup": "8.5.1",
     "typescript": "6.0.3"
+  },
+  "basalt": {
+    "roots": [
+      "packages/basalt-ui-obsidian/src",
+      "apps/demo/src"
+    ]
   }
 }
