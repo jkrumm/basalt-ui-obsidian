@@ -21,5 +21,7 @@ declare const classes: {
   readonly resultRow: string
   readonly resultLink: string
   readonly resultBody: string
+  readonly resultTitle: string
+  readonly resultSnippet: string
 }
 export default classes

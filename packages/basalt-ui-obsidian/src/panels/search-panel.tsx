@@ -13,7 +13,6 @@
  */
 import { Fragment, useEffect } from 'react'
 import { CloseButton, TextInput } from '@mantine/core'
-import { VX } from 'basalt-ui/tokens'
 import { highlightSegments } from 'obsidian-vault-core/search'
 import { useVault } from '../context.js'
 import { folderPath, useVaultSearch } from '../nav/use-vault-search.js'
@@ -95,20 +94,11 @@ function SearchResultRow({ hit, query, active, onNavigate }: SearchResultRowProp
         {renderLink(
           hrefFor(note),
           <span className={classes.resultBody}>
-            <span style={{ fontSize: VX.text.sm, fontWeight: 600, color: VX.ink }}>
+            <span className={classes.resultTitle}>
               <HighlightedText text={hit.title} query={query} />
             </span>
             {hit.snippet !== undefined && (
-              <span
-                style={{
-                  fontSize: VX.text.xs,
-                  color: VX.ink2,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
+              <span className={classes.resultSnippet}>
                 <HighlightedText text={hit.snippet} query={query} />
               </span>
             )}

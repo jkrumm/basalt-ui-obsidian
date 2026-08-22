@@ -257,8 +257,10 @@ function TaskCheckboxGlyph({ checked }: { readonly checked: boolean }) {
 export function ObsidianTaskCheckbox({ type, node: _node, ...rest }: CheckboxProps) {
   // This renders markdown-authored HTML, not app chrome: the node comes from the vault's own
   // source, so there is no Mantine control to swap in and no props seam to thread one through.
-  // The `theme-allow` must sit on the finding's OWN line — `check-theme` only reads that one.
-  if (type !== 'checkbox') return <input type={type} {...rest} /> // theme-allow raw-form-control
+  // Since 1.20.0 the annotation needs a rule id AND a reason introduced by a separator; a
+  // comment-only line directly above the finding also works, but only the ONE line immediately
+  // above it — a multi-line rationale ending in prose waives nothing, so this stays trailing.
+  if (type !== 'checkbox') return <input type={type} {...rest} /> // theme-allow raw-form-control — vault-authored markup
 
   const isChecked = rest.checked === true
   return (
