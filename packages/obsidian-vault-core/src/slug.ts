@@ -23,13 +23,13 @@ export function slugify(text: string): string {
 /**
  * Dedupes repeated slugs within one document. Create one instance per note.
  *
- * The name collides with `basalt-ui/content`'s own `SlugTracker` class, which basalt-ui 1.21.0
- * started reporting when `shadow-basalt-export` widened to read all nine barrels. It is a
- * collision, not a fork: this package is React-free by design and cannot depend on basalt-ui at
- * all, so there is nothing here to import from there. The annotation must be the comment line
- * IMMEDIATELY above the reported line, so the rationale lives here and the waiver below.
+ * The name collides with `basalt-ui/content`'s own `SlugTracker` class. It is a collision, not a
+ * fork: this package is React-free by design and cannot depend on basalt-ui at all, so there is
+ * nothing here to import from there. basalt-ui 1.21.0 reported it anyway when
+ * `shadow-basalt-export` widened to read all nine barrels; 1.22.0 narrowed the rule twice (it
+ * gates on `isBasaltScopedFile`, and a class only counts when it EXTENDS something) and the
+ * report is gone, so the `theme-allow` this docblock used to introduce has been deleted.
  */
-// theme-allow shadow-basalt-export — React-free package; basalt-ui is not importable here
 export class SlugTracker {
   private readonly counts = new Map<string, number>()
 
