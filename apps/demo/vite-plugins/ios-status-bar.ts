@@ -2,7 +2,7 @@
  * `iosStatusBarFix` — rewrites the `apple-mobile-web-app-status-bar-style` meta tag that
  * `basaltAppPlugin` injects into `index.html` from `default` to `black-translucent`.
  *
- * Checked first: `basaltAppPlugin` (re-verified against basalt-ui@1.20.0's `dist/vite.js`) hardcodes
+ * Checked first: `basaltAppPlugin` (re-verified against basalt-ui@1.21.0's `dist/vite.js`) hardcodes
  * this tag unconditionally — `BasaltAppOptions` still has no `statusBarStyle` (or equivalent), so
  * there is no in-source way to ask basalt-ui for `black-translucent` instead. `basalt-ui` itself is
  * out of scope for this change (a separate package), so this rewrites the emitted tag rather than

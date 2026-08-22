@@ -10,13 +10,13 @@
 extends:
   - packages/basalt-ui-obsidian/node_modules/basalt-ui/configs/lefthook.yml
 
-# The preset's own `check-theme` job runs `bunx basalt-ui` — same npm-download problem. An
-# `extends` target WINS over the local file in lefthook's merge (verified with `lefthook dump`:
-# a local `pre-commit.commands.check-theme.run` is replaced, not merged), so it cannot be
-# overridden in place: the preset job is skipped and re-declared under its own name.
+# The preset's `check-theme` job runs `${BASALT_BIN:-bunx --no-install basalt-ui}`. An `extends`
+# target still WINS over the local file on a colliding key, so `run:` cannot be overridden — but
+# `env:` is a key the preset does not define, so it merges. That shell default is the sanctioned
+# seam (basalt-ui 1.21.0); point it at the local bin, because the bunx fallback resolves nothing
+# from this root. Replaces the skip + re-declare-under-another-name workaround this file carried.
 pre-commit:
   commands:
     check-theme:
-      skip: true
-    basalt-theme:
-      run: ./packages/basalt-ui-obsidian/node_modules/.bin/basalt-ui check-theme
+      env:
+        BASALT_BIN: ./packages/basalt-ui-obsidian/node_modules/.bin/basalt-ui

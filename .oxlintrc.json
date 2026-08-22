@@ -7,8 +7,8 @@
   // The path reaches basalt where it ACTUALLY installs: it is a peer + devDependency of
   // `packages/basalt-ui-obsidian` and not a root dependency, so bun's isolated linker puts it
   // there and `./node_modules/basalt-ui/...` resolves to nothing — oxlint then refuses to start.
-  // `basalt-ui doctor` prints the path to use; its `oxlint-preset` check does NOT verify the
-  // target exists, so a stale path here reads green in doctor and red in oxlint.
+  // `basalt-ui doctor` prints the path to use, and since 1.21.0 its `oxlint-preset` check also
+  // verifies the target EXISTS — a stale path here is a hard doctor failure, not a green one.
   "extends": ["./packages/basalt-ui-obsidian/node_modules/basalt-ui/configs/oxlint.json"],
   "plugins": ["react", "typescript", "import", "unicorn", "jsx-a11y", "promise", "oxc"],
   "categories": {
