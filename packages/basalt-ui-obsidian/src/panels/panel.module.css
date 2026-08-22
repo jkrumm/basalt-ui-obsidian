@@ -172,8 +172,71 @@
 }
 
 .emptyLabel {
-  padding: 16px 8px;
+  padding: var(--mantine-spacing-md) 8px;
   text-align: center;
   font-size: 13px;
   color: var(--vx-muted);
+}
+
+/*
+ * Layout classes below exist because `basalt-ui check-theme` treats a raw element carrying an
+ * inline layout style as a finding (`raw-html-layout` / `inline-display` / `inline-spacing`) and
+ * steers to a Mantine layout primitive. A panel row is rendered per note in a list that can run to
+ * hundreds of rows, and this package's whole point is to stay a thin layer over `basalt-ui` — so
+ * the styling moves into this CSS Module rather than into `<Box>`/`<Group>` component instances.
+ */
+
+/* The link cell inside `.row` — takes the free width and lets its text ellipsise. */
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* `align-items: baseline`, not `center`: the 13px title and the 11px folder sit on one line, and
+ * centering two different type sizes leaves the smaller one visibly floating. */
+.rowLabelLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* A panel's fixed header strip — the filter input / segmented control above the scrolling list. */
+.toolbar {
+  padding: 4px 8px;
+}
+
+/* `tree-panel.tsx`'s one-line vault summary above the tree. */
+.summary {
+  padding: 6px 8px 10px;
+  font-size: var(--vx-text-micro);
+  color: var(--vx-muted);
+}
+
+/* Search-query highlight inside a result title/snippet. `color-mix` is what `alpha(VX.accent, .35)`
+ * expands to — same value, expressed where CSS can carry it. */
+.mark {
+  background: color-mix(in srgb, var(--vx-accent) 35%, transparent);
+  color: var(--vx-ink);
+  border-radius: var(--vx-radius-fine);
+}
+
+/* A search result is a two-line row (title over snippet), unlike every other single-line panel row,
+ * so it overrides `.row`'s own cross-axis alignment and inset. */
+.resultRow {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+}
+
+.resultLink {
+  width: 100%;
+}
+
+.resultBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
 }

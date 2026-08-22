@@ -1,0 +1,34 @@
+/*
+ * Chrome for `sidebar-panels.tsx`'s five-tab strip. A CSS Module rather than inline styles because
+ * `basalt-ui check-theme` reports an inline `display: 'flex'` / spacing literal / `borderRadius`
+ * (`inline-display`, `inline-spacing`, `raw-surface`) and steers to a Mantine layout primitive —
+ * which cannot express `position: sticky` + the `[data-selected]` state fork in one element anyway.
+ * Every colour is a `--vx-*` token; the selected fill is the same neutral `color-mix` idiom
+ * `basalt-ui-obsidian`'s own `panel.module.css` uses for an active row (a position marker, not a
+ * call to action).
+ */
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 4px 4px 6px;
+  background-color: var(--vx-surface-bg);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: var(--vx-radius-fine);
+  color: var(--vx-muted);
+  background-color: transparent;
+}
+
+.tab[data-selected='true'] {
+  color: var(--vx-ink);
+  background-color: color-mix(in srgb, var(--vx-ink) 11%, transparent);
+}

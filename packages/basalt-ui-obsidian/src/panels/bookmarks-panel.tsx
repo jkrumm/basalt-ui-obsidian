@@ -12,6 +12,7 @@
  */
 import { useState } from 'react'
 import type { VaultBookmark, VaultTreeNode } from 'obsidian-vault-core'
+import { VX } from 'basalt-ui/tokens'
 import { useVault } from '../context.js'
 import { countNotes, folderNoteOf } from '../nav/vault-nav.js'
 import { NoteRow } from './note-list.js'
@@ -107,7 +108,10 @@ function VaultBookmarkNode({
           style={indent}
           onClick={() => onToggle(nodeKey)}
         >
-          <span className={classes.title} style={{ textTransform: 'uppercase', fontSize: 11 }}>
+          <span
+            className={classes.title}
+            style={{ textTransform: 'uppercase', fontSize: VX.text.micro }}
+          >
             {bookmark.title ?? 'Group'}
           </span>
         </button>

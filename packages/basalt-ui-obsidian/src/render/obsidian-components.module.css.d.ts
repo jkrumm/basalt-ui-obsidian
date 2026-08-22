@@ -12,5 +12,6 @@ declare const classes: {
   readonly dataviewCode: string
   readonly cell: string
   readonly headerCell: string
+  readonly taskCheckbox: string
 }
 export default classes

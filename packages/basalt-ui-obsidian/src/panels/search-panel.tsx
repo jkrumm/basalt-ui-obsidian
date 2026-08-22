@@ -13,7 +13,7 @@
  */
 import { Fragment, useEffect } from 'react'
 import { CloseButton, TextInput } from '@mantine/core'
-import { alpha, VX } from 'basalt-ui/tokens'
+import { VX } from 'basalt-ui/tokens'
 import { highlightSegments } from 'obsidian-vault-core/search'
 import { useVault } from '../context.js'
 import { folderPath, useVaultSearch } from '../nav/use-vault-search.js'
@@ -59,10 +59,7 @@ function HighlightedText({ text, query }: { readonly text: string; readonly quer
       {highlightSegments(text, query).map((segment, i) =>
         segment.matched ? (
           // eslint-disable-next-line react/no-array-index-key -- segments are a stable, ordered split of `text`
-          <mark
-            key={i}
-            style={{ background: alpha(VX.accent, 0.35), color: VX.ink, borderRadius: 2 }}
-          >
+          <mark key={i} className={classes.mark}>
             {segment.text}
           </mark>
         ) : (
@@ -91,21 +88,20 @@ function SearchResultRow({ hit, query, active, onNavigate }: SearchResultRowProp
     <div
       role="listitem"
       data-active={active || undefined}
-      className={classes.row}
-      style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 2, padding: '6px 8px' }}
+      className={`${classes.row} ${classes.resultRow}`}
       onClick={onNavigate}
     >
-      <div className={classes.anchorReset} style={{ width: '100%' }}>
+      <div className={`${classes.anchorReset} ${classes.resultLink}`}>
         {renderLink(
           hrefFor(note),
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: VX.ink }}>
+          <span className={classes.resultBody}>
+            <span style={{ fontSize: VX.text.sm, fontWeight: 600, color: VX.ink }}>
               <HighlightedText text={hit.title} query={query} />
             </span>
             {hit.snippet !== undefined && (
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: VX.text.xs,
                   color: VX.ink2,
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
@@ -134,15 +130,18 @@ export function VaultSearchPanel({
   const { query, setQuery, hits } = useVaultSearch(searchIndex !== undefined ? { searchIndex } : {})
 
   // Seeds once, on mount — see `initialQuery`'s own doc for why this deliberately never re-runs.
+  // Seeds once on mount and must not re-run when the consumer's prop identity changes — see
+  // `initialQuery`'s own doc.
   useEffect(() => {
     if (initialQuery !== undefined && initialQuery !== '') setQuery(initialQuery)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const trimmed = query.trim()
 
   return (
     <div>
-      <div style={{ padding: '4px 8px' }}>
+      <div className={classes.toolbar}>
         <TextInput
           size="sm"
           autoFocus={autoFocus}

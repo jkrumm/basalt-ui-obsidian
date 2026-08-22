@@ -14,7 +14,17 @@
  * the package default in place. Rotation on expand is `VaultNav`'s own concern — this only draws the
  * resting, right-pointing glyph.
  */
-import { Book, Brain, Camera, ChevronRight, Gamepad, Hammer, Heart, Inbox, Lightbulb } from 'lucide-react'
+import {
+  Book,
+  Brain,
+  Camera,
+  ChevronRight,
+  Gamepad,
+  Hammer,
+  Heart,
+  Inbox,
+  Lightbulb,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 const LUCIDE_PREFIX = 'Li'

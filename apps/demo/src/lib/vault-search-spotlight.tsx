@@ -80,7 +80,11 @@ function HighlightedText({ text, query }: { readonly text: string; readonly quer
           // eslint-disable-next-line react/no-array-index-key -- segments are a stable, ordered split of `text`
           <mark
             key={i}
-            style={{ background: alpha(VX.accent, 0.35), color: VX.ink, borderRadius: 2 }}
+            style={{
+              background: alpha(VX.accent, 0.35),
+              color: VX.ink,
+              borderRadius: 'var(--vx-radius-fine)',
+            }}
           >
             {segment.text}
           </mark>

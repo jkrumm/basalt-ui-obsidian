@@ -5,13 +5,14 @@
  * Selection is local state persisted to `localStorage` under `brain:sidebar-panel` — deliberately
  * NOT URL-driven. The desktop sidebar sits BESIDE a note: switching to Tags while reading a note must
  * not navigate away from it, and a single pathname can't encode "show note X" and "show panel Y" at
- * once. The mobile bottom tab bar (`../routes/__root.tsx`) stays URL-driven for exactly the opposite
+ * once. The five NAV destinations (`../lib/nav.tsx`, rendered by basalt-ui's own shell as the sidebar
+ * section above this strip and as the mobile bottom bar) are URL-driven for exactly the opposite
  * reason — there the panel IS the whole page, so the URL is the natural, shareable,
  * back-button-friendly source of truth for it.
  *
  * `TABS` reads from `../lib/browse-surfaces.ts` — the single source of truth for the five browse
- * surfaces' labels/icons/order, shared with `routes/__root.tsx`'s mobile tab bar. This strip renders
- * icons at 16px (the bottom bar uses 18px), deliberately.
+ * surfaces' labels/icons/order for THIS strip; `../lib/nav.tsx` is the routed counterpart. This strip
+ * renders icons at 16px (the shell's bar uses 18px), deliberately.
  */
 import { useState } from 'react'
 import { UnstyledButton } from '@mantine/core'
@@ -26,6 +27,7 @@ import { BROWSE_SURFACES } from '../lib/browse-surfaces'
 import type { BrowseSurfaceKey } from '../lib/browse-surfaces'
 import { useNavigateToSearch } from '../lib/navigate-to-search'
 import { useSearchIndexQuery } from '../lib/vault-data'
+import classes from './sidebar-panels.module.css'
 
 type PanelKey = BrowseSurfaceKey
 
@@ -90,19 +92,7 @@ export function SidebarPanels({ activePath }: SidebarPanelsProps) {
 
   return (
     <div>
-      <div
-        role="group"
-        aria-label="Browse vault"
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1,
-          display: 'flex',
-          gap: 2,
-          padding: '4px 4px 6px',
-          backgroundColor: 'var(--vx-surface-bg)',
-        }}
-      >
+      <div role="group" aria-label="Browse vault" className={classes.strip}>
         {TABS.map(({ key, label, Icon }) => {
           const selected = panel === key
           return (
@@ -111,19 +101,9 @@ export function SidebarPanels({ activePath }: SidebarPanelsProps) {
               type="button"
               aria-label={label}
               aria-pressed={selected}
+              data-selected={selected}
               onClick={() => select(key)}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 28,
-                borderRadius: 4,
-                color: selected ? 'var(--vx-ink)' : 'var(--vx-muted)',
-                backgroundColor: selected
-                  ? 'color-mix(in srgb, var(--vx-ink) 11%, transparent)'
-                  : 'transparent',
-              }}
+              className={classes.tab}
             >
               <Icon size={16} aria-hidden="true" />
             </UnstyledButton>

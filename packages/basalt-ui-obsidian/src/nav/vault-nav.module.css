@@ -146,6 +146,7 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
+  color: var(--vx-muted);
 }
 
 /*
@@ -170,4 +171,27 @@
     position: absolute;
     inset: -3px 0;
   }
+}
+
+/*
+ * The row's icon slot. Sized here rather than inline for the reason `panel.module.css`'s own layout
+ * block records: `check-theme`'s `inline-display` steers an inline `display: 'inline-flex'` to a
+ * Mantine `<Flex>`/`<Group>`, and this span is rendered once per visible tree row.
+ * `ROW_ICON_SIZE_PX` in `vault-nav.tsx` is the same 14px — it stays there because the fallback SVG
+ * needs the number, not a class.
+ */
+.rowIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  opacity: 0.75;
+}
+
+/* The link cell inside `.row` — takes the free width and lets its label ellipsise. */
+.grow {
+  flex: 1;
+  min-width: 0;
 }

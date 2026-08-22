@@ -176,6 +176,9 @@ describe('readFolderIcons', () => {
   test('the reserved settings key is skipped; every other string entry is kept', async () => {
     await writeIconizeData(
       JSON.stringify({
+        // An Obsidian Iconize `data.json` fixture, not a React style object.
+        // `basalt/no-raw-font-size` matches any object property named `fontSize`, even one inside a
+        // JSON string in a package that imports neither React nor Mantine. theme-allow
         settings: { fontSize: 16 },
         Inbox: 'LiInbox',
         Projects: 'LiHammer',

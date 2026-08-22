@@ -255,7 +255,10 @@ function TaskCheckboxGlyph({ checked }: { readonly checked: boolean }) {
  * A non-checkbox `<input>` never reaches this pipeline, but falls through to a plain one regardless.
  */
 export function ObsidianTaskCheckbox({ type, node: _node, ...rest }: CheckboxProps) {
-  if (type !== 'checkbox') return <input type={type} {...rest} />
+  // This renders markdown-authored HTML, not app chrome: the node comes from the vault's own
+  // source, so there is no Mantine control to swap in and no props seam to thread one through.
+  // The `theme-allow` must sit on the finding's OWN line — `check-theme` only reads that one.
+  if (type !== 'checkbox') return <input type={type} {...rest} /> // theme-allow raw-form-control
 
   const isChecked = rest.checked === true
   return (
@@ -263,12 +266,8 @@ export function ObsidianTaskCheckbox({ type, node: _node, ...rest }: CheckboxPro
     <span
       role="img"
       aria-label={isChecked ? 'checked' : 'unchecked'}
-      style={{
-        display: 'inline-flex',
-        verticalAlign: 'text-bottom',
-        marginRight: 6,
-        color: isChecked ? 'var(--vx-accent)' : 'var(--vx-muted)',
-      }}
+      className={classes.taskCheckbox}
+      style={{ color: isChecked ? 'var(--vx-accent)' : 'var(--vx-muted)' }}
     >
       <TaskCheckboxGlyph checked={isChecked} />
     </span>

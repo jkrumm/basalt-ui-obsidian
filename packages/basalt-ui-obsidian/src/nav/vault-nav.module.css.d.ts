@@ -10,5 +10,7 @@ declare const classes: {
   readonly group: string
   readonly row: string
   readonly chevron: string
+  readonly rowIcon: string
+  readonly grow: string
 }
 export default classes

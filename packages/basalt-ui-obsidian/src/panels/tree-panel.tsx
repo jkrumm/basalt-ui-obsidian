@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import type { VaultIndex } from 'obsidian-vault-core'
 import { useVault } from '../context.js'
 import { countNotes, VaultNav } from '../nav/vault-nav.js'
+import classes from './panel.module.css'
 
 export type VaultTreePanelProps = {
   readonly activePath?: string
@@ -49,9 +50,7 @@ export function VaultTreePanel({ activePath, onNavigate, showCounts = true }: Va
 
   return (
     <div>
-      <div style={{ padding: '6px 8px 10px', fontSize: 11, color: 'var(--vx-muted)' }}>
-        {summaryLine}
-      </div>
+      <div className={classes.summary}>{summaryLine}</div>
       <VaultNav
         {...(activePath !== undefined && { activePath })}
         {...(onNavigate !== undefined && { onNavigate })}

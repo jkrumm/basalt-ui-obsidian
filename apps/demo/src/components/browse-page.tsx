@@ -33,11 +33,11 @@ export type BrowsePageProps = {
 export function BrowsePage({ title, children }: BrowsePageProps) {
   return (
     <Box maw={780}>
-      <div style={{ display: 'flex', alignItems: 'center', padding: '4px 0 10px' }}>
-        <Text component="h1" style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>
+      <Box pt={4} pb="xs">
+        <Text component="h1" fz="xl" fw={600} m={0}>
           {title}
         </Text>
-      </div>
+      </Box>
       {children}
     </Box>
   )

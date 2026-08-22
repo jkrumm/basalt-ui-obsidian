@@ -371,7 +371,7 @@ function RowLabel({ id, label, color, weight, underline = false }: RowLabelProps
       truncate="end"
       style={{
         color,
-        fontSize: 13,
+        fontSize: VX.text.sm,
         textDecoration: underline ? 'underline' : 'none',
         ...(underline && {
           textDecorationColor: alpha(color, 0.25),
@@ -403,18 +403,7 @@ function RowIcon({ icon, renderIcon, fallback }: RowIconProps) {
       <FallbackIcon kind={fallback} />
     )
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        width: ROW_ICON_SIZE_PX,
-        height: ROW_ICON_SIZE_PX,
-        opacity: 0.75,
-      }}
-    >
+    <span aria-hidden="true" className={classes.rowIcon}>
       {content}
     </span>
   )
@@ -444,10 +433,6 @@ function RowChevron({ expanded, reduceMotion, onToggle, renderChevron }: RowChev
         onToggle()
       }}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: VX.muted,
         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
         transition: reduceMotion ? 'none' : 'transform 120ms ease',
       }}
@@ -506,7 +491,7 @@ function VaultNavRow({
       <div className={classes.row} data-active={active || undefined} onClick={onNavigate}>
         <RowChevronSpacer />
         <RowIcon icon={vaultNode.icon} renderIcon={renderIcon} fallback="note" />
-        <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }}>
+        <div className={`${classes.anchorReset} ${classes.grow}`}>
           {renderLink(
             hrefFor(note),
             <RowLabel id={labelId} label={note.title} color={color} weight={active ? 600 : 400} />,
@@ -540,7 +525,7 @@ function VaultNavRow({
         fallback={hasChildren && expanded ? 'folder-open' : 'folder-closed'}
       />
       {folderNote !== undefined ? (
-        <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }} onClick={onNavigate}>
+        <div className={`${classes.anchorReset} ${classes.grow}`} onClick={onNavigate}>
           {renderLink(
             hrefFor(folderNote),
             <RowLabel id={labelId} label={vaultNode.name} color={color} weight={600} underline />,
@@ -561,7 +546,7 @@ function VaultNavRow({
           style={{
             marginLeft: 'auto',
             flexShrink: 0,
-            fontSize: 11,
+            fontSize: VX.text.micro,
             fontVariantNumeric: 'tabular-nums',
             color: VX.muted,
           }}

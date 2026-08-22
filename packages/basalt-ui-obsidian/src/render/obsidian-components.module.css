@@ -73,3 +73,13 @@
     font-size: var(--vx-text-sm);
   }
 }
+
+/* Task-list checkbox glyph — an inline-level marker that sits on the text baseline of its list
+ * item. In this CSS Module rather than an inline style so `check-theme`'s `inline-display` /
+ * `inline-spacing` kinds stay satisfied without wrapping a per-list-item glyph in a Mantine
+ * primitive; only the state color stays inline, since it is derived per node. */
+.taskCheckbox {
+  display: inline-flex;
+  vertical-align: text-bottom;
+  margin-right: 6px;
+}

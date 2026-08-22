@@ -88,7 +88,7 @@ export function VaultTagsPanel({
 
   return (
     <div>
-      <div style={{ padding: '4px 8px' }}>
+      <div className={classes.toolbar}>
         <TextInput
           size="xs"
           placeholder="Filter tags…"

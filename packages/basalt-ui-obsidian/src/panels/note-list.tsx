@@ -40,12 +40,10 @@ export function NoteRow({ note, active = false, meta, onNavigate }: NoteRowProps
       className={classes.row}
       onClick={onNavigate}
     >
-      <div className={classes.anchorReset} style={{ flex: 1, minWidth: 0 }}>
+      <div className={`${classes.anchorReset} ${classes.grow}`}>
         {renderLink(
           hrefFor(note),
-          // `alignItems: baseline`, not `center`: the 13px title and the 11px folder sit on one
-          // line, and centering two different type sizes leaves the smaller one visibly floating.
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+          <span className={classes.rowLabelLine}>
             <span
               className={folder === '' ? classes.title : `${classes.title} ${classes.titleShrink}`}
               style={{ color: titleColor, fontWeight: active ? 600 : 400 }}

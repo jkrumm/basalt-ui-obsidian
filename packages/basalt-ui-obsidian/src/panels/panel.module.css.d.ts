@@ -13,5 +13,13 @@ declare const classes: {
   readonly meta: string
   readonly sectionHeader: string
   readonly emptyLabel: string
+  readonly grow: string
+  readonly rowLabelLine: string
+  readonly toolbar: string
+  readonly summary: string
+  readonly mark: string
+  readonly resultRow: string
+  readonly resultLink: string
+  readonly resultBody: string
 }
 export default classes

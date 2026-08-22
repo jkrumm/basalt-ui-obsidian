@@ -126,7 +126,7 @@ export function VaultRecentPanel({ activePath, onNavigate, limit = 50 }: VaultRe
 
   return (
     <div>
-      <div style={{ padding: '4px 8px' }}>
+      <div className={classes.toolbar}>
         <SegmentedControl
           size="xs"
           fullWidth
