@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "import", "unicorn", "promise", "oxc"],
+  // The shipped basalt-ui preset supplies the `basalt/*` plugin rules (raw font sizes, card inset,
+  // hand-rolled plots, chart-legend literals, …) plus the react / jsx-a11y plugin set. Everything
+  // below it is this repo's own delta and wins on merge — most of it stricter, not looser
+  // (`typescript/no-explicit-any` and `import/no-default-export` are both `error` here).
+  "extends": ["./node_modules/basalt-ui/configs/oxlint.json"],
+  "plugins": ["react", "typescript", "import", "unicorn", "jsx-a11y", "promise", "oxc"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
@@ -14,7 +19,26 @@
     "import/no-duplicates": "error",
     "import/no-default-export": "error",
     "import/consistent-type-specifier-style": "error",
-    "import/no-unassigned-import": "off"
+    "import/no-unassigned-import": "off",
+    // ── jsx-a11y, arriving with the basalt-ui preset ────────────────────────────────────────────
+    // The preset turns the whole `jsx-a11y` plugin on. Five of its rules fire on patterns this repo
+    // arrived at deliberately, all of them already carrying their rationale at the call site; they
+    // are switched off here rather than annotated 20 times.
+    //
+    // `prefer-tag-over-role`: a panel/tree row is a `<div role="listitem">` because its ONLY
+    //   interactive child is an anchor the CONSUMER renders (`VaultLinkRenderer`, context.tsx) — a
+    //   real `<li>` would mean owning list markers and resetting them back off in every consumer.
+    // `click-events-have-key-events` / `no-static-element-interactions` /
+    //   `no-noninteractive-element-interactions`: the row's `onClick` DUPLICATES the anchor inside
+    //   it (it exists only to fire `onNavigate`); keyboard users reach the anchor itself, so adding
+    //   a key handler to the wrapper would double-fire rather than add reach.
+    // `no-autofocus`: focusing the field IS the search surface's purpose — both sites are a route
+    //   or panel whose whole body is one search box.
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/no-static-element-interactions": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "jsx-a11y/no-autofocus": "off"
   },
   "ignorePatterns": [
     "dist",
