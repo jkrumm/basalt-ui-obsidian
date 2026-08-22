@@ -5,13 +5,23 @@
 # color literals / off-identity accents that bypass the --vx-* token system).
 # `basalt-ui sync --check` fails when the basalt-managed files (rules, skills, the
 # CLAUDE block) have drifted from the installed basalt-ui version.
-# The oxfmt globs below are rendered from `basalt.roots` at init time — this file is a
-# template, not a raw copy, so a monorepo doesn't seed a `src/**` that matches nothing.
+#
+# The basalt-ui steps below invoke the LOCAL bin, not `bunx basalt-ui`. basalt is a peer +
+# devDependency of `packages/basalt-ui-obsidian` and NOT a root dependency, so under bun's
+# isolated linker it installs beside that package and nothing lands in the root
+# `node_modules/.bin` — `bunx` then silently downloads a different copy from npm (verified
+# against basalt-ui 1.20.0: it recreates a `bunx-*-basalt-ui@latest` temp install every run).
+# The same resolved path is why `.oxlintrc.json` and `lefthook.yml` extend through
+# `packages/basalt-ui-obsidian/node_modules/basalt-ui/...`. `basalt-ui doctor` prints the path
+# to use.
 name: check
 on:
   pull_request:
   push:
     branches: [master]
+
+env:
+  BASALT: ./packages/basalt-ui-obsidian/node_modules/.bin/basalt-ui
 
 jobs:
   check:
@@ -23,10 +33,10 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bunx oxlint .
-      - run: bunx basalt-ui check-theme
-      - run: bunx basalt-ui sync --check
-      # `basalt-ui init` renders this glob from `basalt.roots`, but it seeds `src/**` when the key is
-      # absent — which is every monorepo, since init never writes the key. Pointed at the real roots.
+      - run: $BASALT doctor
+      - run: $BASALT check-theme
+      - run: $BASALT sync --check
+      # Rendered from `basalt.roots` — this repo is a monorepo, so the seed's `src/**` matches nothing.
       - run: bunx oxfmt 'packages/**' 'apps/**' '!**/dist/**' --check
       - run: bun run typecheck
       - run: bun run test

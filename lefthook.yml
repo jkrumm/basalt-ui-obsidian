@@ -1,5 +1,22 @@
 # Seeded by basalt-ui init — you own this file; sync never touches it again.
 # The extends target supplies oxlint + oxfmt + check-theme pre-commit jobs and
 # auto-updates with the basalt-ui package. Add your own commands alongside.
+#
+# The path reaches basalt where it ACTUALLY installs. basalt is a dependency of
+# `packages/basalt-ui-obsidian`, not of the root, so under bun's isolated linker there is no
+# `node_modules/basalt-ui` at the root — and lefthook merges a missing `extends` target
+# silently, leaving zero hooks with a green `lefthook dump`. `basalt-ui doctor` prints the
+# path to use.
 extends:
-  - node_modules/basalt-ui/configs/lefthook.yml
+  - packages/basalt-ui-obsidian/node_modules/basalt-ui/configs/lefthook.yml
+
+# The preset's own `check-theme` job runs `bunx basalt-ui` — same npm-download problem. An
+# `extends` target WINS over the local file in lefthook's merge (verified with `lefthook dump`:
+# a local `pre-commit.commands.check-theme.run` is replaced, not merged), so it cannot be
+# overridden in place: the preset job is skipped and re-declared under its own name.
+pre-commit:
+  commands:
+    check-theme:
+      skip: true
+    basalt-theme:
+      run: ./packages/basalt-ui-obsidian/node_modules/.bin/basalt-ui check-theme

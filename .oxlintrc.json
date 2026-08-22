@@ -4,7 +4,12 @@
   // hand-rolled plots, chart-legend literals, …) plus the react / jsx-a11y plugin set. Everything
   // below it is this repo's own delta and wins on merge — most of it stricter, not looser
   // (`typescript/no-explicit-any` and `import/no-default-export` are both `error` here).
-  "extends": ["./node_modules/basalt-ui/configs/oxlint.json"],
+  // The path reaches basalt where it ACTUALLY installs: it is a peer + devDependency of
+  // `packages/basalt-ui-obsidian` and not a root dependency, so bun's isolated linker puts it
+  // there and `./node_modules/basalt-ui/...` resolves to nothing — oxlint then refuses to start.
+  // `basalt-ui doctor` prints the path to use; its `oxlint-preset` check does NOT verify the
+  // target exists, so a stale path here reads green in doctor and red in oxlint.
+  "extends": ["./packages/basalt-ui-obsidian/node_modules/basalt-ui/configs/oxlint.json"],
   "plugins": ["react", "typescript", "import", "unicorn", "jsx-a11y", "promise", "oxc"],
   "categories": {
     "correctness": "error",
