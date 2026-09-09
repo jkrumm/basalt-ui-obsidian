@@ -10,11 +10,14 @@
 extends:
   - packages/basalt-ui-obsidian/node_modules/basalt-ui/configs/lefthook.yml
 
-# The preset's `check-theme` job runs `${BASALT_BIN:-bunx --no-install basalt-ui}`. An `extends`
-# target still WINS over the local file on a colliding key, so `run:` cannot be overridden — but
-# `env:` is a key the preset does not define, so it merges. That shell default is the sanctioned
-# seam (basalt-ui 1.21.0); point it at the local bin, because the bunx fallback resolves nothing
-# from this root. Replaces the skip + re-declare-under-another-name workaround this file carried.
+# The preset's `check-theme` job runs
+# `${BASALT_BIN:-${BASALT_CWD:+$BASALT_CWD/}node_modules/.bin/basalt-ui}` (1.30.0 replaced the old
+# `bunx --no-install basalt-ui` fallback). An `extends` target still WINS over the local file on a
+# colliding key, so `run:` cannot be overridden — but `env:` is a key the preset does not define, so
+# it merges. `BASALT_BIN` is still needed here, and `BASALT_CWD` is still not: the basalt config
+# lives in the ROOT package.json (`basalt.roots` spans both workspaces), so the root IS the right
+# cwd — but bun's isolated linker puts basalt beside `packages/basalt-ui-obsidian`, so the new
+# default's `node_modules/.bin/basalt-ui` does not exist at this root either.
 pre-commit:
   commands:
     check-theme:

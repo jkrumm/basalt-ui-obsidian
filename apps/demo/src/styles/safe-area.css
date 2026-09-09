@@ -59,7 +59,9 @@ nav.mantine-AppShell-navbar {
  * `display: none` there (`app-brand.module.css`, "no navbar to align with"), the ancestor crumbs
  * are hidden too (`app-header.module.css`), and this app passes no `globalActions` and renders no
  * `PageBar` — so the phone header is a single page crumb naming the note whose own `<h1>` is two
- * lines below it, in 48px of an iPhone-first reader's viewport. It goes. The one thing this trades
+ * lines below it, in 44px of an iPhone-first reader's viewport (48 until basalt-ui 1.30.0 moved
+ * `appShellHeaderHeight`; the arithmetic below is height-agnostic, so the move changes only this
+ * sentence). It goes. The one thing this trades
  * away is `PageBar` row 1, which portals into the header: a route that later mounts a `PageBar`
  * gets no row 1 on the phone, and would want this block narrowed rather than worked around.
  *

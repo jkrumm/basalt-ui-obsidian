@@ -34,10 +34,14 @@
    * SIZE is deliberately untouched — shrinking reading type on the smaller screen would trade
    * information density for legibility, the opposite of this sweep's intent.
    *
-   * Re-derived against `SPACE_ANCHORS_BASE` at 1.29.2: all twelve still land on the values below,
-   * so none of the anchors they mirror moved across 1.25.0 → 1.29.2. Re-derive again on the next
-   * upgrade — a moved anchor is SILENT here, because these are literals rather than a `calc()` off
-   * the shipped var.
+   * Re-derived against `SPACE_ANCHORS_BASE` at 1.30.0: all twelve still land on the values below,
+   * so none of the anchors they mirror moved across 1.25.0 → 1.30.0. 1.30.0's chrome wave DID move
+   * six anchors and add two (header 48→44, ctl 30→32, page-bar row 40→36, sidebar section gap
+   * 12→16, label gap 2→6, region gap 10→12, plus `appShellInset` 20 / `appShellInsetMobile` 8) —
+   * none of them is one of the twelve below, and the shell gutter they govern is now RESPONSIVE
+   * (8px below `sm`, 20px above) upstream, which is the mobile inset this file would otherwise
+   * have had to simulate. Re-derive again on the next upgrade — a moved anchor is SILENT here,
+   * because these are literals rather than a `calc()` off the shipped var.
    */
   :root {
     --vx-space-prose-article-paragraph-gap: 11px !important;
