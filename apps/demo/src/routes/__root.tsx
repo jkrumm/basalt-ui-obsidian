@@ -11,10 +11,10 @@
  * gone.
  *
  * The five browse destinations appear TWICE on desktop by design, and the two are different things:
- * the sidebar section navigates (each tab is a full page with a shareable URL), while
- * `sidebarNavExtra`'s strip (`../components/sidebar-panels.tsx`) switches a LOCAL panel beside the
- * note you are reading without leaving it. Before this migration the five routes had no desktop
- * entry point at all.
+ * the sidebar section navigates (each tab is a full page with a shareable URL), while the
+ * `sidebarBlocks` strip (`../components/sidebar-panels.tsx`) switches a LOCAL panel beside the note
+ * you are reading without leaving it. Before this migration the five routes had no desktop entry
+ * point at all.
  */
 import { Box, Group, Loader } from '@mantine/core'
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
@@ -98,12 +98,19 @@ function RootLayout() {
         brand={{ name: 'Brain' }}
         {...nav}
         search={{ onOpen: openVaultSearch }}
-        sidebarNavExtra={<SidebarPanels activePath={activePath} />}
+        // basalt-ui 1.26.0 removed `sidebarNavExtra` outright; a `kind: 'custom'` block is its
+        // documented replacement and keeps every property this strip relied on — same DOM position
+        // (last child of the sidebar's own nav scroll region), same CSS-only hiding in the collapsed
+        // rail, still desktop-only (a custom block is deliberately NOT projected into the mobile
+        // More sheet, `sidebar-block-model.ts`). `key` is basalt's list key, not a React one.
+        sidebarBlocks={[
+          { kind: 'custom', key: 'vault-panels', node: <SidebarPanels activePath={activePath} /> },
+        ]}
       >
         {/* The note tree used to render as a second, content-level nav column (its own `<aside>`,
-            beside `<Outlet />`) — now it's inside `sidebarNavExtra` on `BasaltShell` instead
+            beside `<Outlet />`) — now it's a `sidebarBlocks` entry on `BasaltShell` instead
             (`../components/sidebar-panels.tsx`), appended after `sections` inside the SHELL's own nav
-            `ScrollArea` (see that prop's JSDoc in `basalt-ui/shell`). That scroll region is entirely
+            `ScrollArea` (see `SidebarBlock`'s JSDoc in `basalt-ui`). That scroll region is entirely
             the sidebar's: bounded to the sidebar's own height, independent of this content column. It
             was never involved in the page-level scrolling below, so removing the old aside changes
             nothing about it. `<Outlet />` was always in normal page flow with no height/overflow of

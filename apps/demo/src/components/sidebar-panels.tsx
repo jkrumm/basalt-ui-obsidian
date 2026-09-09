@@ -1,6 +1,7 @@
 /**
- * `SidebarPanels` — `BasaltShell`'s `sidebarNavExtra` on desktop: a sticky strip of five icon tabs
- * (Tree/Search/Tags/Bookmarks/Recent) above whichever of the five panels is currently selected.
+ * `SidebarPanels` — the `kind: 'custom'` entry in `BasaltShell`'s `sidebarBlocks`, desktop-only: a
+ * sticky strip of five icon tabs (Tree/Search/Tags/Bookmarks/Recent) above whichever of the five
+ * panels is currently selected.
  *
  * Selection is local state persisted to `localStorage` under `brain:sidebar-panel` — deliberately
  * NOT URL-driven. The desktop sidebar sits BESIDE a note: switching to Tags while reading a note must

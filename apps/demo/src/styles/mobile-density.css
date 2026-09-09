@@ -33,6 +33,11 @@
    * law being mirrored (`Math.round(value * (1 + 0.1 * level))`, floored at 1). Table/heading FONT
    * SIZE is deliberately untouched — shrinking reading type on the smaller screen would trade
    * information density for legibility, the opposite of this sweep's intent.
+   *
+   * Re-derived against `SPACE_ANCHORS_BASE` at 1.29.2: all twelve still land on the values below,
+   * so none of the anchors they mirror moved across 1.25.0 → 1.29.2. Re-derive again on the next
+   * upgrade — a moved anchor is SILENT here, because these are literals rather than a `calc()` off
+   * the shipped var.
    */
   :root {
     --vx-space-prose-article-paragraph-gap: 11px !important;

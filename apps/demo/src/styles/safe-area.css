@@ -22,8 +22,21 @@ body {
 /*
  * `BasaltShell`'s own fixed chrome (header, navbar, footer) lays out against the viewport, not
  * `body` — an ancestor's padding (the `body` rule above) never reaches a `position: fixed`
- * descendant, so each needs its own inset. Additive on top of the shell's existing fixed
- * header/footer heights (same "never collapse on a 0 inset" contract as `body` above).
+ * descendant, so each needs its own inset. Same "never collapse on a 0 inset" contract as `body`
+ * above; the footer needs no rule here because Mantine already grows it by
+ * `env(safe-area-inset-bottom)` itself.
+ *
+ * Both selectors are inert on every surface this app actually runs on, and basalt-ui 1.28 is why
+ * for one of them: dropping `layout="alt"` put the navbar BELOW the header
+ * (`top: var(--app-shell-header-offset)`), so it no longer touches the top of the viewport. The
+ * header is the topmost fixed region now — but it is deleted below `sm` (see the block below), and
+ * above `sm` `env(safe-area-inset-top)` is 0, because `basaltAppPlugin` ships
+ * `apple-mobile-web-app-status-bar-style: default` (`basalt-ui/src/vite.ts`), i.e. an OPAQUE status
+ * bar the web view already starts underneath. Kept, not deleted, as the guard for a device that
+ * does report a top inset above `sm` — note that on such a device this would eat into the header's
+ * fixed `--app-shell-header-height` box rather than grow it, which is the point at which the header
+ * wants Mantine's own footer treatment (grow the height by the inset AND offset the content) rather
+ * than a bare padding.
  */
 header.mantine-AppShell-header,
 nav.mantine-AppShell-navbar {
@@ -31,29 +44,48 @@ nav.mantine-AppShell-navbar {
 }
 
 /*
- * Delete the app-shell header entirely, at every breakpoint. Measured live: desktop's whole
- * content was a `Vault / Home` breadcrumb the sidebar navbar (`sections` prop, `__root.tsx`)
- * already shows, highlighted, 216px to the left; mobile's was only the back-button/title row this
- * app portalled in (now removed, see `apps/demo/src/routes/$.tsx`). Since basalt-ui 1.19 the mobile
- * navbar drawer the burger used to open does not exist at all — the shell's own bottom bar navigates
- * instead — so nothing on this header is reachable-only-here. `BasaltShell` has no
- * header prop — its height is hard-coded from the density scale — so this uses Mantine's own
- * AppShell CSS variables, the same supported escape hatch `basalt-ui` itself uses for its
- * `@media print` header suppression (`basalt-ui/src/styles.css`). Both variables, not just
- * `display: none` on the element: `AppShellMain`'s `padding-top` reads `--app-shell-header-offset`,
- * while `__root.tsx`'s sticky note-tree aside reads `--app-shell-header-height` for its `top` — left
- * non-zero, either would keep reserving the header's old hard-coded height even with the header box
- * itself invisible. `!important` for the same cascade reason documented at the top of
- * `mobile-density.css`: these are `:root` variables Mantine injects from a `<style>` tag it renders
- * inside `<body>`, later in the document than this file's own `<link rel="stylesheet">` in `<head>`.
+ * Delete the app-shell header BELOW `sm` only — it used to be deleted at every breakpoint, and
+ * basalt-ui 1.28 is what changed the answer.
+ *
+ * The old rule rested on "nothing on this header is reachable-only-here", measured when the shell
+ * still ran Mantine's `layout="alt"`: the header was inset beside the sidebar and its whole desktop
+ * content was a `Vault / Home` breadcrumb the sidebar's own nav row already showed, highlighted,
+ * 216px to the left. 1.28 dropped `layout="alt"`, spanned the header the full viewport width, and
+ * MOVED the brand row out of the sidebar into the header's leading zone — so on desktop the header
+ * now owns the "Brain" brand and the sidebar collapse toggle, and deleting it would delete both.
+ * The desktop header stays.
+ *
+ * Below `sm` the premise still holds, and basalt states it itself: the brand zone is
+ * `display: none` there (`app-brand.module.css`, "no navbar to align with"), the ancestor crumbs
+ * are hidden too (`app-header.module.css`), and this app passes no `globalActions` and renders no
+ * `PageBar` — so the phone header is a single page crumb naming the note whose own `<h1>` is two
+ * lines below it, in 48px of an iPhone-first reader's viewport. It goes. The one thing this trades
+ * away is `PageBar` row 1, which portals into the header: a route that later mounts a `PageBar`
+ * gets no row 1 on the phone, and would want this block narrowed rather than worked around.
+ *
+ * `BasaltShell` has no header prop — its height is the density scale's `appShellHeaderHeight` — so
+ * this uses Mantine's own AppShell CSS variables, the same supported escape hatch `basalt-ui`
+ * itself uses for its `@media print` header suppression (`basalt-ui/src/styles.css`). Both
+ * variables, not just `display: none` on the element: 1.28 made `AppShell.Main` the scrollport and
+ * gave the page-bar band `margin-top: var(--app-shell-header-offset)` (`app-main.module.css`), so
+ * a non-zero offset would keep reserving the hidden header's height above the content. `!important`
+ * for the same cascade reason documented at the top of `mobile-density.css`: these are `:root`
+ * variables Mantine injects from a `<style>` tag it renders inside `<body>`, later in the document
+ * than this file's own `<link rel="stylesheet">` in `<head>`.
+ *
+ * `47.99375em` is Mantine's own exact complement of its `min-width: 48em` `sm` breakpoint — the
+ * same literal `mobile-density.css` and basalt's own modules use, since a media query cannot read
+ * a custom property.
  */
-:root {
-  --app-shell-header-height: 0px !important;
-  --app-shell-header-offset: 0px !important;
-}
+@media (max-width: 47.99375em) {
+  :root {
+    --app-shell-header-height: 0px !important;
+    --app-shell-header-offset: 0px !important;
+  }
 
-header.mantine-AppShell-header {
-  display: none;
+  header.mantine-AppShell-header {
+    display: none;
+  }
 }
 
 /*
@@ -66,6 +98,10 @@ header.mantine-AppShell-header {
  * resize), so the control's own size is unchanged everywhere it applies. The mobile bottom bar is
  * deliberately absent from the list: basalt-ui 1.19 carries its own 44px
  * `--vx-space-mobile-nav-row-height` floor.
+ *
+ * The 44px floor itself is `--vx-space-touch-target` since basalt-ui 1.29 — the one `SPACE_FIXED`
+ * member emitted as a CSS var, density-exempt, added for exactly this consumer-side
+ * `(pointer: coarse)` rule. Read the token, never the literal.
  */
 @media (pointer: coarse) {
   header button,
@@ -87,8 +123,8 @@ header.mantine-AppShell-header {
     position: absolute;
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
-    width: max(100%, 44px);
-    height: max(100%, 44px);
+    width: max(100%, var(--vx-space-touch-target));
+    height: max(100%, var(--vx-space-touch-target));
   }
 
   /* The `⌘K`/`Ctrl K` shortcut hint has no keyboard on a touch device. */
