@@ -38,5 +38,20 @@ jobs:
       - run: $BASALT sync --check
       # Rendered from `basalt.roots` — this repo is a monorepo, so the seed's `src/**` matches nothing.
       - run: bunx oxfmt 'packages/**' 'apps/**' '!**/dist/**' --check
+      # Build BEFORE typecheck, twice over. The demo resolves `basalt-ui-obsidian`
+      # and `obsidian-vault-core` through their emitted `.d.ts`, and its
+      # `src/routeTree.gen.ts` is gitignored — the router plugin writes it during a
+      # build. A fresh checkout has neither, so typecheck reported 30+ TS2307/TS7006
+      # errors that said nothing about the code. Locally both artifacts already
+      # exist, which is why this only ever failed in CI.
+      - run: bun run build
+      # A throwaway one-note vault. `vaultData()` has no default VAULT_DIR on
+      # purpose — a hardcoded path leaks a username and, on a fresh clone, would
+      # silently read whatever happens to sit there. Building the demo is also a
+      # stronger gate than typechecking it.
+      - run: |
+          mkdir -p /tmp/ci-vault
+          printf '# CI\n\nA note.\n' > /tmp/ci-vault/note.md
+      - run: VAULT_DIR=/tmp/ci-vault bun --filter @basalt-ui-obsidian/demo build
       - run: bun run typecheck
       - run: bun run test
