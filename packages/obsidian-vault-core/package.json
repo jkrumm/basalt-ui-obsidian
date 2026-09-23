@@ -34,10 +34,10 @@
     "mdast-util-find-and-replace": "3.0.2",
     "minisearch": "7.2.0",
     "unist-util-visit": "5.1.0",
-    "yaml": "2.9.0"
+    "yaml": "2.9.1"
   },
   "devDependencies": {
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.2",
     "@types/mdast": "4.0.4",
     "remark-gfm": "4.0.1",
     "remark-parse": "11.0.0",
