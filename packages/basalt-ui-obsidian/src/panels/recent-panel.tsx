@@ -104,6 +104,8 @@ export function VaultRecentPanel({ activePath, onNavigate, limit = 50 }: VaultRe
   const [mode, setMode] = useState<Mode>('updated')
 
   const groups = useMemo(() => {
+    // `now` only re-reads when a dep below changes, to bucket items into relative-time groups.
+    // oxlint-disable-next-line react/purity -- intentional: see comment above
     const now = Date.now()
     if (mode === 'updated') {
       // `fromVaultBundle` now backfills a missing `mtime` to 0 on rehydration, so this filter is

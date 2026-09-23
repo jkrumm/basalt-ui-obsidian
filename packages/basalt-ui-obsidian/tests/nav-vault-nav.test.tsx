@@ -85,14 +85,12 @@ function buildTree(notes: readonly VaultNote[]): VaultTreeNode {
     kind: 'folder',
     children: [
       ...[...folder.folders.values()].map(toNode),
-      ...folder.notes.map(
-        (n): VaultTreeNode => ({
-          name: n.basename,
-          path: n.path,
-          kind: 'note',
-          note: n,
-        }),
-      ),
+      ...folder.notes.map((n): VaultTreeNode => ({
+        name: n.basename,
+        path: n.path,
+        kind: 'note',
+        note: n,
+      })),
     ],
   })
 
