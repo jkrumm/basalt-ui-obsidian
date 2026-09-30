@@ -75,11 +75,11 @@ nav.mantine-AppShell-navbar {
  * variables Mantine injects from a `<style>` tag it renders inside `<body>`, later in the document
  * than this file's own `<link rel="stylesheet">` in `<head>`.
  *
- * `47.99375em` is Mantine's own exact complement of its `min-width: 48em` `sm` breakpoint — the
- * same literal `mobile-density.css` and basalt's own modules use, since a media query cannot read
- * a custom property.
+ * `52.49375em` is the exact complement of basalt-ui's `medium` size class (52.5em, where the shell
+ * swaps the bottom bar for the sidebar) — the same literal `mobile-density.css` and basalt's own
+ * `tokens.css` use, since a media query cannot read a custom property.
  */
-@media (max-width: 47.99375em) {
+@media (max-width: 52.49375em) {
   :root {
     --app-shell-header-height: 0px !important;
     --app-shell-header-offset: 0px !important;
@@ -101,9 +101,8 @@ nav.mantine-AppShell-navbar {
  * deliberately absent from the list: basalt-ui 1.19 carries its own 44px
  * `--vx-space-mobile-nav-row-height` floor.
  *
- * The 44px floor itself is `--vx-space-touch-target` since basalt-ui 1.29 — the one `SPACE_FIXED`
- * member emitted as a CSS var, density-exempt, added for exactly this consumer-side
- * `(pointer: coarse)` rule. Read the token, never the literal.
+ * The 44px floor itself is `--vx-hit` since basalt-ui 1.31 (was `--vx-space-touch-target`) — 44px
+ * under `(pointer: coarse)`, density-exempt. Read the token, never the literal.
  */
 @media (pointer: coarse) {
   header button,
@@ -125,8 +124,8 @@ nav.mantine-AppShell-navbar {
     position: absolute;
     inset: 50% auto auto 50%;
     transform: translate(-50%, -50%);
-    width: max(100%, var(--vx-space-touch-target));
-    height: max(100%, var(--vx-space-touch-target));
+    width: max(100%, var(--vx-hit));
+    height: max(100%, var(--vx-hit));
   }
 
   /* The `⌘K`/`Ctrl K` shortcut hint has no keyboard on a touch device. */

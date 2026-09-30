@@ -8,6 +8,7 @@ import { ArticleLayout, Markdown } from 'basalt-ui/content'
 import type { ArticleLayoutMeta } from 'basalt-ui/content'
 import type { VaultNote } from 'obsidian-vault-core'
 
+import classes from './obsidian-components.module.css'
 import { useObsidianMarkdown } from './use-obsidian-markdown.js'
 
 /** Widens `--vx-text-md`'s param position, purely so the object literal below type-checks — csstype
@@ -96,7 +97,9 @@ export function NoteView({ note, toc, readingProgress }: NoteViewProps) {
       {...(toc !== undefined && { toc })}
       {...(readingProgress !== undefined && { readingProgress })}
     >
-      <Markdown {...markdownProps}>{body}</Markdown>
+      <Markdown {...markdownProps} className={classes.body}>
+        {body}
+      </Markdown>
     </ArticleLayout>
   )
 }

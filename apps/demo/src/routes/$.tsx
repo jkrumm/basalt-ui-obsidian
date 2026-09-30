@@ -5,8 +5,7 @@
  */
 import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Stack, useMantineTheme } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Stack } from '@mantine/core'
 import { EmptyState } from 'basalt-ui'
 import { Backlinks, NoteView, recordNoteView, useVault } from 'basalt-ui-obsidian'
 import type { VaultNote } from 'obsidian-vault-core'
@@ -44,15 +43,6 @@ function NotePage() {
   const { _splat: slug } = Route.useParams()
   const { index } = useVault()
   const note = slug !== undefined ? index.bySlug.get(slug) : undefined
-  // `Stack.gap` has no responsive-object form at the type level — it's a bespoke component prop
-  // wired straight to a `--stack-gap` inline style, not one of `Box`'s generic `StyleProp<T>` style
-  // props (`p`/`m`/`w`/`h`/…, see `@mantine/core`'s `MantineStyleProps`). A JS breakpoint check is
-  // the plain, type-safe alternative; `max-width`, not `min-width`, so the test harness's constant
-  // `matchMedia` stub (`matches: false`) resolves to "not mobile" and keeps today's desktop value.
-  const theme = useMantineTheme()
-  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`, undefined, {
-    getInitialValueInEffect: false,
-  })
 
   // `document.title`/`lang` are global DOM state, not React-owned — set them imperatively on
   // mount/note-change and restore the app default on unmount (leaving the note route, e.g. back to
@@ -80,11 +70,10 @@ function NotePage() {
   }
 
   return (
-    // `xl` (26px) is a desktop-tuned gap — same measure between the article and the backlinks
-    // section on a 393px phone, where every px of vertical space is scarcer. `lg` (20px) below `sm`
-    // keeps the gap present (the two still separate distinct regions) without the desktop's extra
-    // breathing room; desktop is untouched.
-    <Stack gap={isMobile ? 'lg' : 'xl'}>
+    // `xl` (26px) on desktop, `lg` (20px) in the compact size class — the value lives in
+    // `shell/mobile-density.css` with the rest of the compact density overrides, so it is CSS
+    // (no first-paint flash) and keyed on the same size-class boundary as the shell.
+    <Stack gap="var(--app-note-stack-gap)">
       <NoteView note={note} />
       <Backlinks path={note.path} />
     </Stack>

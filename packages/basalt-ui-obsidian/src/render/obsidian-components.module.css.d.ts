@@ -10,6 +10,7 @@ declare const classes: {
   readonly dataview: string
   readonly dataviewCaption: string
   readonly dataviewCode: string
+  readonly body: string
   readonly cell: string
   readonly headerCell: string
   readonly taskCheckbox: string

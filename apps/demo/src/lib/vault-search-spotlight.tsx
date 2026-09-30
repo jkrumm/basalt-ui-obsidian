@@ -24,8 +24,7 @@
  *   without them iOS capitalizes and autocorrects a vault query out from under the user.
  */
 import { Fragment, useEffect } from 'react'
-import { Stack, Text, useMantineTheme } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { Stack, Text } from '@mantine/core'
 import { createSpotlight, Spotlight } from '@mantine/spotlight'
 import type {
   SpotlightActionData,
@@ -40,6 +39,7 @@ import {
   useVaultSearch,
 } from 'basalt-ui-obsidian'
 import type { VaultSearchHit } from 'basalt-ui-obsidian'
+import { useSizeClass } from 'basalt-ui'
 import { alpha, VX } from 'basalt-ui/tokens'
 import { highlightSegments } from 'obsidian-vault-core/search'
 import { useSearchIndexQuery } from './vault-data'
@@ -134,8 +134,9 @@ export function VaultSearchSpotlight() {
   const { data: searchIndex } = useSearchIndexQuery()
   const { query, setQuery, hits } = useVaultSearch(searchIndex !== undefined ? { searchIndex } : {})
   const navigate = useNavigate()
-  const theme = useMantineTheme()
-  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`)
+  // Overlay chrome, opened on interaction — long after `useSizeClass()` has settled past its
+  // first-paint `compact` hint, so the shell's size class is the right (and flash-free) read here.
+  const isMobile = useSizeClass() === 'compact'
 
   // See the module doc: `hits` lands after `useVaultSearch`'s debounce, racing past Spotlight's own
   // typing-driven preselection — this re-applies it once the real results are in.

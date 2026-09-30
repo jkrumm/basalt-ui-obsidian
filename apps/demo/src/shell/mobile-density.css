@@ -3,10 +3,10 @@
  * are desktop-tuned literals that this repo doesn't own the source of (vendored `basalt-ui`/
  * `@mantine/core`, not `packages/basalt-ui-obsidian`). Every rule below is a scoped, mobile-only
  * override of a CSS custom property basalt-ui/Mantine already expose for exactly this — never a new
- * selector reaching into their internals — under `(max-width: 47.99375em)`, Mantine's own exact
- * complement of its `min-width: 48em` `sm` breakpoint (the same value `basalt-ui/content/
- * prose.module.css`'s own responsive rule uses, verified against the installed `@mantine/core`'s
- * `MantineClasses.mjs` — see that file's comment for the derivation).
+ * selector reaching into their internals — under `(max-width: 52.49375em)`, the exact complement of
+ * basalt-ui's `medium` size class (`SIZE_CLASSES`, 840px = 52.5em; `theme.breakpoints.sm` since
+ * 1.31) — the same literal basalt's own `tokens.css` uses for its compact-class spacing overrides.
+ * It lives under `shell/` because that is the size-class axis's one CSS home (`raw-media-query`).
  *
  * `!important` throughout is load-bearing, not a shortcut: every property here is a `--vx-*`
  * custom property `BasaltProvider` itself sets on the SAME `:root` selector via a `<style>` tag it
@@ -16,7 +16,7 @@
  * override a framework's own runtime-injected `:root` variables from consumer CSS; nothing here
  * fights specificity.
  */
-@media (max-width: 47.99375em) {
+@media (max-width: 52.49375em) {
   /*
    * Prose/Callout/table block rhythm (`basalt-ui/content/{prose,callout}.module.css`) is entirely
    * `--vx-space-*` token driven — the SAME derivation `createBasaltTheme(overrides, { density })`
@@ -34,6 +34,7 @@
    * SIZE is deliberately untouched — shrinking reading type on the smaller screen would trade
    * information density for legibility, the opposite of this sweep's intent.
    *
+   * Re-derived at 1.32.0: all twelve still land on the values below (no anchor moved in 1.31/1.32).
    * Re-derived against `SPACE_ANCHORS_BASE` at 1.30.0: all twelve still land on the values below,
    * so none of the anchors they mirror moved across 1.25.0 → 1.30.0. 1.30.0's chrome wave DID move
    * six anchors and add two (header 48→44, ctl 30→32, page-bar row 40→36, sidebar section gap
@@ -56,5 +57,20 @@
     --vx-space-callout-title-row-gap: 6px !important;
     --vx-space-prose-table-cell-inset-y: 4px !important;
     --vx-space-prose-table-cell-inset-x: 6px !important;
+  }
+}
+
+/*
+ * The note page's article → backlinks gap (`routes/$.tsx`): Mantine's `xl` on desktop, `lg` in the
+ * compact class, where vertical space is scarcer but the two regions still need separating. A var
+ * rather than a JS size-class read so it is right on the first paint.
+ */
+:root {
+  --app-note-stack-gap: var(--mantine-spacing-xl);
+}
+
+@media (max-width: 52.49375em) {
+  :root {
+    --app-note-stack-gap: var(--mantine-spacing-lg);
   }
 }

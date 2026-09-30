@@ -190,9 +190,9 @@ export function ObsidianImage({ src, alt, width, height }: ImgProps) {
  * table its own horizontal scroll instead of crushing columns or scrolling the article, so nothing
  * else about table layout needs to change.
  *
- * `classes.cell`/`classes.headerCell` add a narrow-viewport font-size bump on top (13.5px/11px
- * desktop-density numerals read too small as the READING size on a 393px screen) — a `@media` rule
- * has to live in a real stylesheet, so it's the one piece here that can't be inline `style`.
+ * `classes.cell`/`classes.headerCell` add a narrow-column font-size bump on top (13.5px/11px
+ * desktop-density numerals read too small as the READING size on a 393px screen) — an `@container`
+ * rule has to live in a real stylesheet, so it's the one piece here that can't be inline `style`.
  */
 const CELL_WRAP_STYLE = { overflowWrap: 'normal', wordBreak: 'normal' } as const
 

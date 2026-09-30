@@ -60,11 +60,18 @@
   word-break: break-word;
 }
 
+/* The note body is the container the table cells below key on — the reading column's own width,
+ * not the viewport, so a note rendered in a narrow aside on a desktop gets the same bump a phone
+ * does. `NoteView` sets it on `Markdown`'s root, a block in the article column (definite width). */
+.body {
+  container-type: inline-size;
+}
+
 /* Table cells — basalt's own `prose.module.css` sizes these for desktop density (13.5px/11px,
  * `--vx-text-sm`/`--vx-text-micro`). Measured on a 393px viewport that pair reads too small to be
- * the READING size, not too large — so a narrow-viewport override steps both UP a rung, never
- * below what desktop already ships. */
-@media (max-width: 480px) {
+ * the READING size, not too large — so a narrow-column override steps both UP a rung, never below
+ * what desktop already ships. 479.9px = under `CONTAINER_CLASSES.regular`. */
+@container (max-width: 479.9px) {
   .cell {
     font-size: var(--vx-text-md);
   }
