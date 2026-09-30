@@ -30,9 +30,7 @@ if (typeof window.ResizeObserver === 'undefined') {
   window.ResizeObserver = ResizeObserverShim as unknown as typeof ResizeObserver
 }
 
-// theme-allow raw-breakpoint — happy-dom test polyfill that DEFINES matchMedia (useSizeClass needs one), not a viewport read
 if (typeof window.matchMedia === 'undefined') {
-  // theme-allow raw-breakpoint — the polyfill assignment itself, same reason
   window.matchMedia = (query: string): MediaQueryList =>
     ({
       matches: false,

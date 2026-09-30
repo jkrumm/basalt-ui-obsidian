@@ -17,7 +17,7 @@
     "@shikijs/themes": "4.4.3",
     "@tanstack/react-query": "^5.103.1",
     "@tanstack/react-router": "1.170.38",
-    "basalt-ui": "1.32.0",
+    "basalt-ui": "1.32.1",
     "basalt-ui-obsidian": "workspace:*",
     "beautiful-mermaid": "1.1.3",
     "lucide-react": "1.47.0",
