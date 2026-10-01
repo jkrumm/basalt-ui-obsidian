@@ -134,8 +134,6 @@ export function VaultSearchSpotlight() {
   const { data: searchIndex } = useSearchIndexQuery()
   const { query, setQuery, hits } = useVaultSearch(searchIndex !== undefined ? { searchIndex } : {})
   const navigate = useNavigate()
-  // Overlay chrome, opened on interaction — long after `useSizeClass()` has settled past its
-  // first-paint `compact` hint, so the shell's size class is the right (and flash-free) read here.
   const isMobile = useSizeClass() === 'compact'
 
   // See the module doc: `hits` lands after `useVaultSearch`'s debounce, racing past Spotlight's own
