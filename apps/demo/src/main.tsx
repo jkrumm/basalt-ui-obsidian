@@ -1,6 +1,5 @@
 // CSS layer order is load-bearing: the `.layer.css` Mantine variants (never `styles.css`), then
-// `@mantine/spotlight`'s own layered sheet, then `basalt-ui/styles.css` last — see CLAUDE.md's
-// "basalt-ui consumers" note.
+// `@mantine/spotlight`'s own layered sheet, then `basalt-ui/styles.css` last.
 import '@mantine/core/styles.layer.css'
 import '@mantine/spotlight/styles.layer.css'
 import 'basalt-ui/styles.css'
