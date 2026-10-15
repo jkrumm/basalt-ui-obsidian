@@ -62,7 +62,7 @@ rebuilding the previous revision and running `make refresh`.
 - `nginx.conf` serves `index.html`, `vault.json`, `search-index.json` and `sw.js` as `no-cache`
   on purpose; only hashed `/assets/` are immutable. Don't "optimize" those away.
 
-<!-- basalt:begin 2.8.1 -->
+<!-- basalt:begin 2.9.0 -->
 
 ## basalt-ui (managed — do not hand-edit)
 
@@ -76,8 +76,8 @@ series token, never a literal.
 `.claude/rules/` > the `basalt-*` skills. Each rule bullet ends in the lint rule, guard kind or type
 that enforces it; skills are procedure, not law.
 
-**Run the local bin** (`./node_modules/.bin/basalt-ui` or a package script), never `bunx`; `init` is the
-one exception.
+**Run the local bin** (`./node_modules/.bin/basalt-ui` or a package script), never `bunx`; `init` is
+the one exception. In a workspace: the app package's `node_modules/.bin/basalt-ui`.
 
 **Before guessing an import, read the installed `llms.txt`** at the install directory (in a workspace,
 under the depending package; `basalt-ui doctor` prints where; a fresh worktree needs `bun install` first).
