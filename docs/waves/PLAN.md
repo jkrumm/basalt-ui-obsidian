@@ -220,19 +220,42 @@ pushed, still not merged (D3(b)). Gate green on 2.8.0: `make check` 0 tsc errors
 - **basalt friction:** none new. Row 68 (mermaid font `@import`, appears on 2.8.0 as on 1.41.0, twice per `/Showcase` render in
   some runs) recorded, not worked around. Plan text still says 2.7.3; all pins are 2.8.0.
 
-## Wave 5 — Visual check against the baseline (before deploy) <!-- status: active -->
+## Wave 5 — Visual check against the baseline (before deploy) <!-- status: done -->
 
-- [ ] Rebuild with the Wave 1 scratch vault and take the Wave 1 screenshot set again, same
+- [x] Rebuild with the Wave 1 scratch vault and take the Wave 1 screenshot set again, same
       viewports, schemes and states.
-- [ ] Diff each pair; the evidence file lists every difference as intended (2.x doctrine), regression
+- [x] Diff each pair; the evidence file lists every difference as intended (2.x doctrine), regression
       (fix or ledger row) or noise. Bundle bytes vs Wave 1: the SW precache and entry/vendor split
       must be explained, not just reported.
-- [ ] Fix regressions that are this repo's; write ledger rows for basalt-rooted ones and hold the
+- [x] Fix regressions that are this repo's; write ledger rows for basalt-rooted ones and hold the
       wave until the minor that fixes them or the owner accepts them.
-- [ ] `/review` the full migration diff (Waves 2–5) and run `@verifier` on the built `dist` served
+- [x] `/review` the full migration diff (Waves 2–5) and run `@verifier` on the built `dist` served
       from a scratch nginx on a non-production port (no change to the live container).
 
-## Wave 6 — Deploy and live verify <!-- status: pending -->
+**Left behind:** evidence in `docs/waves/evidence/basalt-2-w5.md` + `basalt-2-w5/` (40 PNGs). Branch `basalt-2`, pushed, still not
+merged (D3(b)); Wave 6 merges and advances the live checkout. Gate green on 2.8.0: `make check` 0 tsc errors, 261 pass / 1 skip; demo
+build green (92 precache entries). `/review` of the Waves 2–5 diff: its one blocking finding (no QueryClientProvider) is disproved
+(`createBasaltRouter` owns the client; the built reader loads data on every route), the stale `BasaltOverlays` docblock is fixed.
+`@verifier`: 0 console issues beyond row 68, SW active with 92 entries, one Cmd+K dialog, Lighthouse equal to 1.41.0.
+
+- **27 of 37 screenshot pairs are identical to 1.41.0 outside the `/Showcase` code fence** (25 exact, 4 sub-0.02 % noise); the 8 that
+  differ differ only by the fence region and what shifts up under it.
+- **Fence delta (orchestrator question): intended in rhythm, regressed in one detail.** Gaps paragraph/list → fence and fence → next block
+  are identical (18 / 14 px) on both versions; only the inner `pre` margin went 18 → 0 (fence 36 px shorter).
+- **Basalt friction, to file (basalt-ui-obsidian W5), not worked around:** the `CodeBlock` copy button now overlaps the first code line
+  (button 6–28 px, first line 11–29 px from the wrapper top; 17 px overlap vs a 1 px clearance on 1.41.0). Always visible on touch, so
+  on the phone it clips the demo's first line; on desktop it shows on hover for first lines over ~70 characters. Wave 6 should hold for
+  the owner's call on whether to accept it or wait for a basalt minor.
+- **Basalt friction, minor:** `dev-dock`, `theme-lab` and the two devtools stubs (34109 B) ship in the production build and the SW precache
+  of every 2.x app; never requested at runtime.
+- **Back-nav scroll (447 of 600) settled:** the router restores once while the fences are still plain `<pre>` fallbacks (page 447 px
+  scrollable); shiki and mermaid grow it to 647 afterwards. Improvement over 1.41.0 (no restore), not a regression.
+- **Bundle explained:** +102744 B = entry JS +29652, CSS +18246, shiki 4.4.3 → 4.5.0 +36105, dev-only chunks +34109, Mantine
+  re-split −15368. Vendor chunk byte-identical. `/Showcase` CLS 0.008–0.014 vs ≤0.005, under 0.1.
+- No served nginx: Docker is Makefile-only, so the dist was served by a Bun script; nginx behaviour is Wave 6's.
+- **basalt friction:** the two rows above. Plan text still says 2.7.3 in places; all pins are 2.8.0.
+
+## Wave 6 — Deploy and live verify <!-- status: active -->
 
 - [ ] Advance the live checkout (D3), run `make deploy` (`up`: build, recreate container, `verify`).
       Never raw `docker compose`.

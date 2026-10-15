@@ -139,7 +139,7 @@ export type ToVaultSearchActionsOptions = {
   readonly group?: string
 }
 
-/** Project search hits into Mantine Spotlight actions, feeding basalt's `BasaltOverlays`/palette. */
+/** Project search hits into Mantine Spotlight actions, for the consumer's own Spotlight. */
 export function toVaultSearchActions(
   hits: readonly VaultSearchHit[],
   options: ToVaultSearchActionsOptions,
