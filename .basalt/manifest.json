@@ -17,7 +17,7 @@
     ".claude/rules/basalt-controls.md": "d7b90e1574776420029b5e421913be785bad14e669ccbd70e6206575cab373da",
     "AGENTS.md": "c76c2747fb7fc3b0f435990fa884818d0e39a440555f664e5d4c2c82b7697ba2"
   },
-  "basaltVersion": "2.8.0",
+  "basaltVersion": "2.8.1",
   "spacingScale": {
     "xs": 11,
     "sm": 13,
