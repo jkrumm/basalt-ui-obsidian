@@ -13,6 +13,8 @@ bundle numbers, then live on brain-web.
 suppressions; the wave's evidence in `docs/waves/evidence/basalt-2-w<n>.md`, compared against
 `docs/waves/evidence/basalt-2-w1.md` from Wave 2 on.
 
+**Target:** `basalt-ui@2.8.0` (released 2026-10-15; carries the fleet-probe fixes, basalt-ui ledger rows 61–67). Where this plan pins 2.7.3, pin 2.8.0; claims verified on 2.7.3 stay valid.
+
 **Fleet note:** this plan feeds basalt-ui `docs/waves/argo-friction.md`. A basalt-rooted problem
 becomes a row there, prefixed `basalt-ui-obsidian W<n>`, and is never worked around locally. This repo
 stays exact-pinned on the 1.41.0 pin until Wave 2 runs. basalt-ui is PR-required: a lead that cannot
@@ -56,7 +58,7 @@ separate from any `docs/waves/PLAN.md`; it does not edit, reorder or start waves
   Spotlights now compete for Cmd+K. If they do, that is a ledger row (the app's own search is a
   legitimate reason to opt out) and Wave 3 waits for a basalt minor rather than patching around it.
 
-## Wave 1 — Baseline on 1.41.0 <!-- status: pending -->
+## Wave 1 — Baseline on 1.41.0 <!-- status: active -->
 
 - [ ] Pin check: both `basalt-ui` pins read 1.41.0, `bun install --frozen-lockfile` is clean, and
       `make check` plus the demo build are green on 1.41.0 (Appendix B records the 0-error typecheck).
