@@ -143,6 +143,7 @@ describe('useObsidianMarkdown — table cells and inline icons', () => {
 
     expect(await within(container).findByText('the blocked diagram')).toBeDefined()
     expect(container.querySelector('img')).toBeNull()
+    expect(container.querySelector('[aria-label="the blocked diagram"]')).toBeNull()
   })
 })
 
