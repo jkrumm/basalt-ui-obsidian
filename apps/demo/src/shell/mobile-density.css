@@ -34,6 +34,8 @@
    * SIZE is deliberately untouched — shrinking reading type on the smaller screen would trade
    * information density for legibility, the opposite of this sweep's intent.
    *
+   * Re-derived at 2.8.0: all twelve still land on the values below (shipped `tokens.css` anchors
+   * 14/30/10/6/14/6/18, callout 10/14/8, table cell 5/8; none moved since 1.32).
    * Re-derived at 1.32.0: all twelve still land on the values below (no anchor moved in 1.31/1.32).
    * Re-derived against `SPACE_ANCHORS_BASE` at 1.30.0: all twelve still land on the values below,
    * so none of the anchors they mirror moved across 1.25.0 → 1.30.0. 1.30.0's chrome wave DID move

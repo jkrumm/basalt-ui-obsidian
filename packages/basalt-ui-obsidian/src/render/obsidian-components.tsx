@@ -136,7 +136,8 @@ export function ObsidianBlockquote({ node, children }: BlockquoteProps) {
 /**
  * `img` — `remarkObsidianImageSize` emits `width`/`height` as ordinary hast properties (already
  * exposed as the standard `width`/`height` props, no `node` digging needed). Missing/empty `src`
- * skips the element entirely, and `loading="lazy"` is kept — both matching basalt's own default.
+ * (a refused URL) skips the element and shows the `alt` as plain text, as basalt's own default
+ * does since 2.0, and `loading="lazy"` is kept — both matching basalt's own default.
  * `decoding="async"` is added unconditionally — off the main thread either way, never a downside.
  *
  * Sizing also decides how the image sits relative to surrounding text: an icon-sized embed
@@ -155,7 +156,7 @@ export function ObsidianBlockquote({ node, children }: BlockquoteProps) {
  * letterboxes inside that reserved box instead of stretching to fill it.
  */
 export function ObsidianImage({ src, alt, width, height }: ImgProps) {
-  if (typeof src !== 'string' || src === '') return <span aria-label={alt} />
+  if (typeof src !== 'string' || src === '') return <span>{alt}</span>
   const numericWidth = typeof width === 'number' ? width : Number(width)
   const isInlineIcon =
     Number.isFinite(numericWidth) && numericWidth > 0 && numericWidth <= INLINE_ICON_MAX_WIDTH

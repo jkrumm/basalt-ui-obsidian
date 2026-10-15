@@ -130,6 +130,20 @@ describe('useObsidianMarkdown — table cells and inline icons', () => {
     expect(img?.style.display).toBe('block')
     expect(img?.style.verticalAlign).toBe('')
   })
+
+  // basalt-ui 2.0 renders a refused image's `alt` as plain text instead of an empty span; the
+  // `img` override must keep that, or a blocked embed vanishes without a trace.
+  test('an image the URL allowlist refuses renders its alt text, with no <img>', async () => {
+    const markdown = 'see ![the blocked diagram](http://example.com/x.png) here\n'
+    const { container } = render(
+      <Wrapper>
+        <Harness markdown={markdown} />
+      </Wrapper>,
+    )
+
+    expect(await within(container).findByText('the blocked diagram')).toBeDefined()
+    expect(container.querySelector('img')).toBeNull()
+  })
 })
 
 describe('useObsidianMarkdown — folded callout', () => {
