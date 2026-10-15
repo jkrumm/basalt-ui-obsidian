@@ -255,21 +255,40 @@ build green (92 precache entries). `/review` of the Waves 2–5 diff: its one bl
 - No served nginx: Docker is Makefile-only, so the dist was served by a Bun script; nginx behaviour is Wave 6's.
 - **basalt friction:** the two rows above. Plan text still says 2.7.3 in places; all pins are 2.8.0.
 
-## Wave 6 — Deploy and live verify <!-- status: active -->
+## Wave 6 — Deploy and live verify <!-- status: done -->
 
-- [ ] Advance the live checkout (D3), run `make deploy` (`up`: build, recreate container, `verify`).
+- [x] Advance the live checkout (D3), run `make deploy` (`up`: build, recreate container, `verify`).
       Never raw `docker compose`.
-- [ ] Prove it live: `make verify` exits 0 with matching `build-id.txt`; the served
+- [x] Prove it live: `make verify` exits 0 with matching `build-id.txt`; the served
       `http://127.0.0.1:7733/build-id.txt` equals `apps/demo/dist/build-id.txt`; `curl` shows the new
       `index.html` and a 2.x-built asset hash.
-- [ ] `@verifier` loads the real brain-web (loopback, and the Caddy URL if reachable) on desktop and
+- [x] `@verifier` loads the real brain-web (loopback, and the Caddy URL if reachable) on desktop and
       phone, opens a note, the Cmd+K search, the bookmarks route, and confirms an installed PWA picks up
       the new service worker (the `sw-update` path) with zero console errors.
-- [ ] Wait one `make refresh` cycle: touch nothing, let the LaunchAgent fire after the next vault
+- [x] Wait one `make refresh` cycle: touch nothing, let the LaunchAgent fire after the next vault
       commit, and confirm the served build-id still equals a 2.x build. If verify fails, the next PR is
       the fix; rollback is rebuilding the previous revision and `make refresh` (`AGENTS.md` § Deploy).
 
-## Wave 7 — Fresh-agent DX trial <!-- status: pending -->
+**Left behind:** basalt-ui bumped 2.8.0 → 2.8.1 (exact, both `package.json`, `bun.lock`, `basalt-ui sync` refreshed
+AGENTS.md block + `.basalt/manifest.json`); `make check` green (261 pass / 1 skip), demo build precache 84 entries with no
+`dev-dock`/`theme-lab`. `basalt-2` fast-forwarded into `master` and pushed (master convention: direct, not PR-required); live
+checkout advanced; `make deploy` green. Live build-id `7c5010f8e4e21dd45ee28be323a17531` equals `apps/demo/dist/build-id.txt`; a manual
+`make refresh` left it unchanged and `make verify` ok. `@verifier` (headless Chrome, desktop 1440x900 + phone 390x844, loopback and
+`https://brain.test`): note, Cmd+K (10 results), `/bookmarks`, SW activated/controlling, `registration.update()` ok, 84 precache
+entries, 0 stale dev chunks, 0 Google Fonts requests, 0 console errors. 2.8.1 checks (pre-deploy static build): no
+`fonts.googleapis` request, mermaid renders at `/Projects/rollhook`, copy button 1.0 px above the first code line at 390 px.
+- **Not observed:** a LaunchAgent-fired `make refresh` after a real vault commit (last vault commit predated the deploy; ran the
+  same target by hand instead); a true old-to-new SW transition (no previous build in the browser); real iPhone Safari;
+  browser run of `brain.mini.jkrumm.com` (curl only, same build-id). There is no `/Showcase` route in this app; the Showcase
+  checks ran on vault pages.
+- **basalt friction:** (1) the bundle still carries a `fonts.googleapis` `@import` code path in a chunk (`dist-*.js`, a theme/font
+  loader); no request is made at runtime, but the string ships. (2) Copy-button clearance is only 1 px at 390 px on
+  `/wiki/weatherorb/architecture-2026-09`. (3) `basalt-ui sync` run from `apps/demo` refuses without `BASALT_CWD`; there is no
+  root-level `node_modules/.bin/basalt-ui` in this workspace layout, so the AGENTS.md "run the local bin" line has no
+  obvious path.
+- Plan text still says 2.7.3 in places; the pin is 2.8.1.
+
+## Wave 7 — Fresh-agent DX trial <!-- status: active -->
 
 - [ ] Spawn a fresh agent with no migration context, only `AGENTS.md`, the shipped rules and skills.
       Brief: add a `/graph` route to the demo that lists a note's outgoing links with a `Callout`-styled
