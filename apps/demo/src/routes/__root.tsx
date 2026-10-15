@@ -3,7 +3,8 @@
  * `<VaultProvider>` (the one seam every basalt-ui-obsidian component reads from) and `<BasaltShell>`
  * (app chrome).
  *
- * Navigation is ONE typed definition — `VAULT_NAV` (`../lib/nav.tsx`) — passed to the shell as `nav={VAULT_NAV}`, which renders it as both the desktop sidebar section and the mobile bottom
+ * Navigation is ONE typed definition — `VAULT_NAV` (`../lib/nav.tsx`) — passed to the shell as
+ * `nav={VAULT_NAV}`, which renders it as both the desktop sidebar section and the mobile bottom
  * bar. Against basalt-ui 1.14 this app hand-rolled that bar (a `<nav>` of router `Link`s plus ~50
  * lines of CSS) because the shell's own mobile tabs raised a full-viewport `Drawer` rather than
  * navigating; 1.19's bar IS a set of destinations, so the hand-rolled one and its stylesheet are

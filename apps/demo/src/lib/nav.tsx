@@ -2,9 +2,10 @@
  * `VAULT_NAV` — the ONE typed navigation definition (basalt-ui `defineNav`).
  *
  * It drives BOTH surfaces `BasaltShell` renders: the desktop sidebar section and the mobile bottom
- * bar. `BasaltShell nav={VAULT_NAV}` (`routes/__root.tsx`) resolves active state through the router, replacing the hand-rolled `<nav>` tab
- * bar, its stylesheet, and the `renderNavLink` callback this app carried against basalt-ui 1.14,
- * when the shell's own mobile tabs raised a `Drawer` instead of navigating.
+ * bar. `BasaltShell nav={VAULT_NAV}` (`routes/__root.tsx`) resolves active state through the
+ * router, replacing the hand-rolled `<nav>` tab bar, its stylesheet, and the `renderNavLink`
+ * callback this app carried against basalt-ui 1.14, when the shell's own mobile tabs
+ * raised a `Drawer` instead of navigating.
  *
  * Every destination is `mobile: 'tab'`, which is exactly `MOBILE_MAX_TABS_DEFAULT` (5) — nothing
  * overflows, so `projectMobileNav` renders five link slots and no "More".
