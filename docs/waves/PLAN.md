@@ -146,24 +146,40 @@ Evidence: `docs/waves/evidence/basalt-2-w2.md`. Gate green on **2.8.0** (not 2.7
 - Mermaid Google Fonts `@import` appears twice on `/Showcase` (once in Wave 1): known, ledger row 68, untouched.
 - **basalt friction:** none new. Observation for the orchestrator: the plan text says 2.7.3 in several places; all pins are 2.8.0.
 
-## Wave 3 — Shell, routing and the command surface <!-- status: active -->
+## Wave 3 — Shell, routing and the command surface <!-- status: done -->
 
-- [ ] Decide D4 with evidence: with the provider-mounted `Spotlight`, press Cmd/Ctrl+K and `/`-style
+- [x] Decide D4 with evidence: with the provider-mounted `Spotlight`, press Cmd/Ctrl+K and `/`-style
       hotkeys on every route; record which overlay opens and whether `VaultSearchSpotlight` still
       wins. If the two compete, write the ledger row (`basalt-ui-obsidian W3`), park the Spotlight
       sub-step, and continue the rest.
-- [ ] `BasaltShell` props the demo passes (`brand`, `search`, `sidebarBlocks`) against the 2.7.3
+- [x] `BasaltShell` props the demo passes (`brand`, `search`, `sidebarBlocks`) against the 2.7.3
       `.d.ts`; `sidebarBlocks` custom node still lands last in the nav scroll region and hides in the
       collapsed rail; the mobile More sheet still omits it.
-- [ ] Route transitions: `createBasaltRouter` now sets `defaultViewTransition` with direction from the
+- [x] Route transitions: `createBasaltRouter` now sets `defaultViewTransition` with direction from the
       `defineNav` order. Check that the note-route scroll restoration and the TOC rail `position:
     sticky` (documented in `__root.tsx`) survive, and that no `<ViewTransition>` wraps `<Outlet>`.
-- [ ] `useSizeClass` consumers (`routes/index.tsx`, `vault-search-spotlight.tsx`) and the demo's
+- [x] `useSizeClass` consumers (`routes/index.tsx`, `vault-search-spotlight.tsx`) and the demo's
       `shell/mobile-density.css`, `shell/safe-area.css` constants (840px / 52.5em complement) against
       MIGRATING § 1.31 and § 2.0 shell rows; record any changed breakpoint.
-- [ ] Evidence `basalt-2-w3.md`: a before/after for the shell at the three size classes.
+- [x] Evidence `basalt-2-w3.md`: a before/after for the shell at the three size classes.
 
-## Wave 4 — Content, tokens and the library surface <!-- status: pending -->
+**Left behind:** evidence in `docs/waves/evidence/basalt-2-w3.md` + `basalt-2-w3/` (28 PNGs). No source change; branch
+`basalt-2` still not merged (D3(b)). Gate green on 2.8.0: `make check` 0 tsc errors, 260 pass / 1 skip; demo build green;
+8 routes × 3 size classes, 0 console errors. `/review` not run (docs and PNGs only).
+
+- **D4 closed:** `spotlight={false}` is the 2.x answer; Cmd/Ctrl+K opens exactly the app's `VaultSearchSpotlight` on every
+  route and size class, as on 1.41.0. `/` opens nothing on either version. No ledger row.
+- Shell props, `sidebarBlocks` (last in the nav region, hidden in the rail, desktop-only), sticky TOC rail, breakpoints
+  (840px = 52.49375em still the exact complement) and all measured tokens equal the 1.41.0 baseline. No `<ViewTransition>`
+  around `<Outlet>`. Back-nav now restores scroll partially (447 of 600) where 1.41.0 restored none; cause undetermined,
+  for Wave 5 to re-look.
+- Baseline facts, unchanged: no on-screen search trigger at compact; off-canvas navbar not `inert`.
+- Wave 4 inherits the stale-comment list in its plan unchanged (`mobile-density.css` and `safe-area.css` still cite
+  1.x versions in prose; Wave 4 owns them).
+- **basalt friction:** none new (row 68 ignored per the brief). Orchestrator note: the plan text still says 2.7.3; all
+  pins are 2.8.0.
+
+## Wave 4 — Content, tokens and the library surface <!-- status: active -->
 
 The library's real basalt surface: `Markdown`, `Callout`, `ArticleLayout`, `mergeSanitizeSchema` and
 the fence/component types from `basalt-ui/content`, plus `VX`/`alpha` from `basalt-ui/tokens` in
