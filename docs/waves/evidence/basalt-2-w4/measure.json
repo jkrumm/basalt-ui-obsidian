@@ -1,0 +1,696 @@
+{
+ "1.41-compact-dark": {
+  "m": {
+   "scheme": "dark",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "11px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "21px",
+    "paddingBottom": "5px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "15px"
+   },
+   "th": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "14px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 390,
+     "h": 788,
+     "x": 0
+    },
+    "h2": {
+     "w": 338,
+     "h": 42,
+     "x": 26
+    },
+    "callout": null,
+    "pre": {
+     "w": 310,
+     "h": 61,
+     "x": 40
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [],
+   "scrollW": 390,
+   "clientW": 390
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "1.41-compact-light": {
+  "m": {
+   "scheme": "light",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "11px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "21px",
+    "paddingBottom": "5px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "15px"
+   },
+   "th": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "14px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 390,
+     "h": 788,
+     "x": 0
+    },
+    "h2": {
+     "w": 338,
+     "h": 42,
+     "x": 26
+    },
+    "callout": null,
+    "pre": {
+     "w": 310,
+     "h": 61,
+     "x": 40
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [],
+   "scrollW": 390,
+   "clientW": 390
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "1.41-expanded-dark": {
+  "m": {
+   "scheme": "dark",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "14px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "21px",
+    "paddingBottom": "6px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "13.5px"
+   },
+   "th": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "18px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 1184,
+     "h": 856,
+     "x": 256
+    },
+    "h2": {
+     "w": 612,
+     "h": 43,
+     "x": 404
+    },
+    "callout": null,
+    "pre": {
+     "w": 584,
+     "h": 61,
+     "x": 418
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [
+    "#code",
+    "#table",
+    "#diagram",
+    "#subsection"
+   ],
+   "scrollW": 1440,
+   "clientW": 1440
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "1.41-expanded-light": {
+  "m": {
+   "scheme": "light",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "14px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "21px",
+    "paddingBottom": "6px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "13.5px"
+   },
+   "th": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "18px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 1184,
+     "h": 856,
+     "x": 256
+    },
+    "h2": {
+     "w": 612,
+     "h": 43,
+     "x": 404
+    },
+    "callout": null,
+    "pre": {
+     "w": 584,
+     "h": 61,
+     "x": 418
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [
+    "#code",
+    "#table",
+    "#diagram",
+    "#subsection"
+   ],
+   "scrollW": 1440,
+   "clientW": 1440
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "2.8-compact-dark": {
+  "m": {
+   "scheme": "dark",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "11px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "21px",
+    "paddingBottom": "5px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "15px"
+   },
+   "th": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "0px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 390,
+     "h": 788,
+     "x": 0
+    },
+    "h2": {
+     "w": 338,
+     "h": 42,
+     "x": 26
+    },
+    "callout": null,
+    "pre": {
+     "w": 310,
+     "h": 61,
+     "x": 40
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [],
+   "scrollW": 390,
+   "clientW": 390
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "2.8-compact-light": {
+  "m": {
+   "scheme": "light",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "11px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "21px",
+    "paddingBottom": "5px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "24px",
+    "marginBottom": "8px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "15px"
+   },
+   "th": {
+    "paddingTop": "4px",
+    "paddingLeft": "6px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "0px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 390,
+     "h": 788,
+     "x": 0
+    },
+    "h2": {
+     "w": 338,
+     "h": 42,
+     "x": 26
+    },
+    "callout": null,
+    "pre": {
+     "w": 310,
+     "h": 61,
+     "x": 40
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [],
+   "scrollW": 390,
+   "clientW": 390
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB",
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "2.8-expanded-dark": {
+  "m": {
+   "scheme": "dark",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "14px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "21px",
+    "paddingBottom": "6px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "13.5px"
+   },
+   "th": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "0px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 1184,
+     "h": 856,
+     "x": 256
+    },
+    "h2": {
+     "w": 612,
+     "h": 43,
+     "x": 404
+    },
+    "callout": null,
+    "pre": {
+     "w": 584,
+     "h": 61,
+     "x": 418
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [
+    "#code",
+    "#table",
+    "#diagram",
+    "#subsection"
+   ],
+   "scrollW": 1440,
+   "clientW": 1440
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB",
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ },
+ "2.8-expanded-light": {
+  "m": {
+   "scheme": "light",
+   "p": [
+    {
+     "marginTop": "0px",
+     "marginBottom": "14px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    },
+    {
+     "marginTop": "0px",
+     "marginBottom": "0px",
+     "fontSize": "16px",
+     "lineHeight": "27.2px"
+    }
+   ],
+   "h2": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "21px",
+    "paddingBottom": "6px",
+    "borderBottomWidth": "1px"
+   },
+   "h3": {
+    "marginTop": "30px",
+    "marginBottom": "10px",
+    "fontSize": "18px"
+   },
+   "callout": null,
+   "td": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "13.5px"
+   },
+   "th": {
+    "paddingTop": "5px",
+    "paddingLeft": "8px",
+    "fontSize": "11px"
+   },
+   "pre": {
+    "paddingTop": "0px",
+    "marginTop": "0px",
+    "fontSize": "13.5px"
+   },
+   "rects": {
+    "article": {
+     "w": 1184,
+     "h": 856,
+     "x": 256
+    },
+    "h2": {
+     "w": 612,
+     "h": 43,
+     "x": 404
+    },
+    "callout": null,
+    "pre": {
+     "w": 584,
+     "h": 61,
+     "x": 418
+    }
+   },
+   "ids": [
+    "",
+    "code",
+    "table",
+    "diagram",
+    "subsection"
+   ],
+   "tocLinks": [
+    "#code",
+    "#table",
+    "#diagram",
+    "#subsection"
+   ],
+   "scrollW": 1440,
+   "clientW": 1440
+  },
+  "log": [
+   "requestfailed: https://fonts.googleapis.com/css2?family=var(--basalt-font-sans):wght@400;500;600;700&display=swap net::ERR_BLOCKED_BY_ORB"
+  ]
+ }
+}

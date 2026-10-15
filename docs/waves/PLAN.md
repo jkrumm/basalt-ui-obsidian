@@ -179,31 +179,48 @@ Evidence: `docs/waves/evidence/basalt-2-w2.md`. Gate green on **2.8.0** (not 2.7
 - **basalt friction:** none new (row 68 ignored per the brief). Orchestrator note: the plan text still says 2.7.3; all
   pins are 2.8.0.
 
-## Wave 4 — Content, tokens and the library surface <!-- status: active -->
+## Wave 4 — Content, tokens and the library surface <!-- status: done -->
 
 The library's real basalt surface: `Markdown`, `Callout`, `ArticleLayout`, `mergeSanitizeSchema` and
 the fence/component types from `basalt-ui/content`, plus `VX`/`alpha` from `basalt-ui/tokens` in
 three panels.
 
-- [ ] Content semantics: `Markdown` blocked-image rendering (`alt` text span, MIGRATING § 2.0
+- [x] Content semantics: `Markdown` blocked-image rendering (`alt` text span, MIGRATING § 2.0
       content), `contentTrust`, the heading-id contract with `TableOfContents`, content inset and block
       rhythm (the demo's `mobile-density.css` overrides it), and the Prose/Callout spacing. Compare
       note-route screenshots to Wave 1.
-- [ ] Sanitize schema: `render-sanitize-schema.test.tsx` and `sanitize-schema.ts` against the 2.x
+- [x] Sanitize schema: `render-sanitize-schema.test.tsx` and `sanitize-schema.ts` against the 2.x
       `SanitizeSchemaExtension` shape (compiles today; confirm the merge result is identical by running
       the schema through both the 1.41 baseline output and 2.7.3 output on the same fixture).
-- [ ] Library packaging: `bun run build`, `publint && attw --pack .` in `obsidian-vault-core`, and
+- [x] Library packaging: `bun run build`, `publint && attw --pack .` in `obsidian-vault-core`, and
       `.d.ts` output of `basalt-ui-obsidian` no longer references a removed basalt type. Re-read
       `peerDependenciesMeta` against the 2.7.3 table (`react-markdown`, `rehype-sanitize`,
       `remark-gfm` stay).
-- [ ] Update the comments that cite 1.x behaviour: `obsidian-vault-core/src/slug.ts` (the
+- [x] Update the comments that cite 1.x behaviour: `obsidian-vault-core/src/slug.ts` (the
       `SlugTracker` collision note: `SlugTracker` is deleted from `basalt-ui/content`, so the
       collision is gone and the comment is stale), `tests/setup/dom.ts`, `mobile-density.css` and
       `safe-area.css` file references (`basalt-ui/content/{prose,callout}.module.css`,
       `basalt-ui/src/vite.ts`). Only edit comments that are now wrong.
-- [ ] Not used here, so no wave: charts (none rendered), tables, controls/forms, agent chat, state.
+- [x] Not used here, so no wave: charts (none rendered), tables, controls/forms, agent chat, state.
 
-## Wave 5 — Visual check against the baseline (before deploy) <!-- status: pending -->
+**Left behind:** evidence in `docs/waves/evidence/basalt-2-w4.md` + `basalt-2-w4/` (4 PNGs, `measure.json`). Branch `basalt-2`,
+pushed, still not merged (D3(b)). Gate green on 2.8.0: `make check` 0 tsc errors, 261 pass / 1 skip; demo build green;
+`/review` of the code diff: 0 blocking, docblock + empty-alt parity fixed, `!important`/changelog-comment notes skipped.
+
+- **One repo-owned fix:** `ObsidianImage` kept the 1.x empty `aria-label` span for a refused image; now renders the alt as
+  plain text like 2.x (`alt ? <span>{alt}</span> : null`), with a test. Commits `0184267`, `1aeba5e`.
+- **Verified unchanged:** sanitize merge result (`cmp`-identical JSON on 1.41.0 vs 2.8.0), heading slug algorithm and ids vs
+  TOC hrefs, `contentTrust` default, the twelve `mobile-density.css` anchors, computed prose/callout/table metrics at 390 and 1440.
+- **One visual delta for Wave 5 to classify:** code fence `pre` margin-top 18 px (14 compact) on 1.41.0 → 0 on 2.8.0, fence
+  36 px shorter. basalt `CodeBlock` chrome; treat as intended 2.x unless the owner objects.
+- Packaging: `publint` clean on both libraries; the emitted `.d.ts` reference no removed basalt type; peer meta unchanged.
+  `obsidian-vault-core` `attw --pack` fails (`node10` no-resolution, CJS-to-ESM) **identically on master 1.41.0**: pre-existing,
+  ESM-only package, not touched, not basalt-rooted.
+- Wave 3's open item (back-nav scroll restoration 447 of 600) is still for Wave 5; not re-measured here.
+- **basalt friction:** none new. Row 68 (mermaid font `@import`, appears on 2.8.0 as on 1.41.0, twice per `/Showcase` render in
+  some runs) recorded, not worked around. Plan text still says 2.7.3; all pins are 2.8.0.
+
+## Wave 5 — Visual check against the baseline (before deploy) <!-- status: active -->
 
 - [ ] Rebuild with the Wave 1 scratch vault and take the Wave 1 screenshot set again, same
       viewports, schemes and states.
