@@ -1,9 +1,8 @@
 /**
- * `VAULT_NAV` — the ONE typed navigation definition (basalt-ui 1.19 `defineNav`).
+ * `VAULT_NAV` — the ONE typed navigation definition (basalt-ui `defineNav`).
  *
  * It drives BOTH surfaces `BasaltShell` renders: the desktop sidebar section and the mobile bottom
- * bar. `useNav(VAULT_NAV)` (`routes/__root.tsx`) resolves active state through the router and hands
- * back `{ sections, mobileNav }` to spread onto the shell — replacing the hand-rolled `<nav>` tab
+ * bar. `BasaltShell nav={VAULT_NAV}` (`routes/__root.tsx`) resolves active state through the router, replacing the hand-rolled `<nav>` tab
  * bar, its stylesheet, and the `renderNavLink` callback this app carried against basalt-ui 1.14,
  * when the shell's own mobile tabs raised a `Drawer` instead of navigating.
  *
@@ -20,7 +19,7 @@
  * strip's LOCAL-STATE switch (see `components/sidebar-panels.tsx`), not a set of routes.
  */
 import { linkOptions } from '@tanstack/react-router'
-import { defineNav, navGroup } from 'basalt-ui/router-tanstack'
+import { defineNav, navGroup } from 'basalt-ui'
 import { Bookmark, Clock, ListTree, Search, Tags } from 'lucide-react'
 
 /** Matches the shell's own slot glyphs; the desktop sidebar row uses the same node. */

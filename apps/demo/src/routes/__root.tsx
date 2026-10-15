@@ -3,8 +3,7 @@
  * `<VaultProvider>` (the one seam every basalt-ui-obsidian component reads from) and `<BasaltShell>`
  * (app chrome).
  *
- * Navigation is ONE typed definition — `VAULT_NAV` (`../lib/nav.tsx`) — resolved by `useNav` and
- * spread onto the shell, which renders it as both the desktop sidebar section and the mobile bottom
+ * Navigation is ONE typed definition — `VAULT_NAV` (`../lib/nav.tsx`) — passed to the shell as `nav={VAULT_NAV}`, which renders it as both the desktop sidebar section and the mobile bottom
  * bar. Against basalt-ui 1.14 this app hand-rolled that bar (a `<nav>` of router `Link`s plus ~50
  * lines of CSS) because the shell's own mobile tabs raised a full-viewport `Drawer` rather than
  * navigating; 1.19's bar IS a set of destinations, so the hand-rolled one and its stylesheet are
@@ -18,8 +17,7 @@
  */
 import { Box, Group, Loader } from '@mantine/core'
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
-import { BasaltShell, EmptyState } from 'basalt-ui'
-import { useBasaltNav, useNav } from 'basalt-ui/router-tanstack'
+import { BasaltShell, EmptyState, useBasaltNav } from 'basalt-ui'
 import { VaultProvider, encodeSlugPath } from 'basalt-ui-obsidian'
 import type { VaultHrefResolver, VaultLinkRenderer } from 'basalt-ui-obsidian'
 import { SidebarPanels } from '../components/sidebar-panels'
@@ -59,7 +57,6 @@ const renderLink: VaultLinkRenderer = (href, children) => <Link to={href as neve
 function RootLayout() {
   const { data: index, isLoading, isError, error } = useVaultIndexQuery()
   const { currentPath } = useBasaltNav()
-  const nav = useNav(VAULT_NAV)
 
   if (isLoading) {
     return (
@@ -96,7 +93,7 @@ function RootLayout() {
       <VaultSearchSpotlight />
       <BasaltShell
         brand={{ name: 'Brain' }}
-        {...nav}
+        nav={VAULT_NAV}
         search={{ onOpen: openVaultSearch }}
         // basalt-ui 1.26.0 removed `sidebarNavExtra` outright; a `kind: 'custom'` block is its
         // documented replacement and keeps every property this strip relied on — same DOM position

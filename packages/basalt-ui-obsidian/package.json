@@ -25,14 +25,14 @@
     "obsidian-vault-core": "workspace:*"
   },
   "devDependencies": {
-    "@mantine/core": "9.6.1",
-    "@mantine/hooks": "9.6.1",
+    "@mantine/core": "9.7.2",
+    "@mantine/hooks": "9.7.2",
     "@types/bun": "1.4.2",
     "@types/hast": "3.0.5",
     "@types/mdast": "4.0.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "basalt-ui": "1.41.0",
+    "basalt-ui": "2.8.0",
     "hast-util-sanitize": "5.0.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -41,9 +41,9 @@
     "remark-gfm": "4.0.1"
   },
   "peerDependencies": {
-    "@mantine/core": "^9.3.0",
-    "@mantine/hooks": "^9.3.0",
-    "basalt-ui": "^1.30.2",
+    "@mantine/core": "^9.7.0",
+    "@mantine/hooks": "^9.7.0",
+    "basalt-ui": "^2.7.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",

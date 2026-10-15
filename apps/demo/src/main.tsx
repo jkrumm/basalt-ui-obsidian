@@ -1,27 +1,30 @@
-// CSS layer order is load-bearing: the `.layer.css` Mantine variants (never `styles.css`), then
-// `@mantine/spotlight`'s own layered sheet, then `basalt-ui/styles.css` last.
-import '@mantine/core/styles.layer.css'
-import '@mantine/spotlight/styles.layer.css'
+// `basalt-ui/styles.css` `@import`s the Mantine core, notifications and spotlight layers itself —
+// importing them here as well would ship each sheet twice. App CSS comes after it.
 import 'basalt-ui/styles.css'
 import './shell/safe-area.css'
 import './shell/mobile-density.css'
 
-import { QueryClientProvider } from '@tanstack/react-query'
-import { createRouter, RouterProvider } from '@tanstack/react-router'
-import { BasaltProvider, createBasaltTheme } from 'basalt-ui'
-import { BasaltOverlays } from 'basalt-ui/commands'
+import { BasaltProvider, createBasaltRouter } from 'basalt-ui'
+import type { BasaltEvent } from 'basalt-ui'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { queryClient } from './lib/query-client'
 import { registerServiceWorker } from './lib/sw-update'
 import { routeTree } from './routeTree.gen'
 
-const router = createRouter({ routeTree })
+const router = createBasaltRouter({ routeTree })
 
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+}
+
+// Console sink for failures only: no telemetry backend exists (AGENTS.md § Verify & Monitor), so
+// this keeps the 1.x `onError` behaviour — a failed route, query or render is visible in devtools.
+function telemetry(event: BasaltEvent): void {
+  if (!event.failed) return
+  // oxlint-disable-next-line no-console
+  console.error('[basalt]', event.type, event.attributes)
 }
 
 // Before render, not after: `registerSW({ immediate: true })` should be in flight while React
@@ -34,20 +37,14 @@ if (!root) throw new Error('root element not found')
 
 createRoot(root).render(
   <StrictMode>
+    {/* spotlight={false}: this app registers no command map, so the provider's command-palette
+        Spotlight would only ever hold `nav.*` entries — src/lib/vault-search-spotlight.tsx owns
+        Cmd+K instead, backed by useVaultSearch's MiniSearch ranking. */}
     <BasaltProvider
-      theme={createBasaltTheme()}
+      router={router}
       defaultColorScheme="dark"
-      // oxlint-disable-next-line no-console
-      onError={(error, ctx) => console.error('[basalt]', ctx, error)}
-    >
-      {/* spotlight={false}: this app registers no `basalt-ui/commands` command map, so the
-          command-palette Spotlight would only ever be empty — src/lib/vault-search-spotlight.tsx
-          owns Cmd+K instead, backed by useVaultSearch's MiniSearch ranking. */}
-      <BasaltOverlays spotlight={false}>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>
-      </BasaltOverlays>
-    </BasaltProvider>
+      spotlight={false}
+      telemetry={telemetry}
+    />
   </StrictMode>,
 )

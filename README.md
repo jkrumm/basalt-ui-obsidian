@@ -3,7 +3,7 @@
 Read an Obsidian vault on the web. A framework-free parser plus (later) a React
 reader built on [basalt-ui](https://github.com/jkrumm/basalt-ui).
 
-Status: **v0, unreleased.** Only `obsidian-vault-core` exists so far.
+Status: **v0, unreleased.** Only `obsidian-vault-core` exists so far. `basalt-ui-obsidian` peers on `basalt-ui` `^2.7.3` (was `^1.30.2`) and `@mantine/*` `^9.7.0`; nothing outside this repo consumes it, so there is no version bump.
 
 ## Packages
 
