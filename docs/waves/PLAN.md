@@ -99,18 +99,18 @@ Gate on 1.41.0: `make check` green (0 tsc errors, 260 pass / 1 skip); bundle byt
   `--basalt-font-sans` by basalt, unconfirmed; the orchestrator files it if basalt-rooted. Verifier also
   lacked the chrome-devtools MCP; it used `puppeteer-core`.
 
-## Wave 2 — The 2.7.3 bump (atomic) <!-- status: active -->
+## Wave 2 — The 2.7.3 bump (atomic) <!-- status: done -->
 
 Sized from the probe: 6 type errors in 3 files plus 3 `doctor` hard failures. 1.x and 2.x cannot share
 the demo, so this lands as one change: pins, wiring and managed layer together.
 
-- [ ] Pins: `basalt-ui` `2.7.3` exact in `packages/basalt-ui-obsidian` devDependencies and
+- [x] Pins: `basalt-ui` `2.7.3` exact in `packages/basalt-ui-obsidian` devDependencies and
       `apps/demo`; the library peer becomes `^2.7.3` (D1, D2); `@mantine/core|hooks` devDependencies
       and peers to `^9.7.0` (installed 9.6.1 trips bun's incorrect-peer warning); add the now-required
       `@mantine/modals` and `@mantine/notifications` to the demo, and move `shiki`, `@shikijs/*`,
       `@tanstack/react-query` and `motion` to what the 2.7.3 peer table asks if a clean
       `bun install` warns. `bun install` stays warning-free.
-- [ ] `apps/demo/src/main.tsx` to the shipped `agent/templates/main.tpl` shape: `createBasaltRouter({
+- [x] `apps/demo/src/main.tsx` to the shipped `agent/templates/main.tpl` shape: `createBasaltRouter({
     routeTree })` replaces `createRouter` + `QueryClientProvider` + `RouterProvider`;
       `<BasaltProvider router={router} theme=… defaultColorScheme="dark" telemetry=…>` replaces the
       children-wrapping provider; delete `BasaltOverlays`, `lib/query-client.ts`, and the
@@ -118,21 +118,35 @@ the demo, so this lands as one change: pins, wiring and managed layer together.
       `styles.css` `@import`s them; keeping them ships the bundle twice). Keep `./shell/*.css` after
       `basalt-ui/styles.css`. `onError` becomes the `telemetry` seam or is dropped, and the choice goes in
       the evidence.
-- [ ] `routes/__root.tsx` and `lib/nav.tsx`: `defineNav`, `navGroup`, `useBasaltNav` import from
+- [x] `routes/__root.tsx` and `lib/nav.tsx`: `defineNav`, `navGroup`, `useBasaltNav` import from
       `basalt-ui`; `useNav(VAULT_NAV)` and the `{...nav}` spread become `nav={VAULT_NAV}` on
       `BasaltShell`; `createRootRoute` becomes `createRootRouteWithContext<BasaltRouterContext>()`
       only if `doctor` or the template requires it.
-- [ ] Toolchain: `tsconfig.base.json` extends `basalt-ui/configs/tsconfig.react-app.json` (doctor
+- [x] Toolchain: `tsconfig.base.json` extends `basalt-ui/configs/tsconfig.react-app.json` (doctor
       `tsconfig-base`); keep the repo's stricter extras only if the preset lacks them. Run
       `packages/basalt-ui-obsidian/node_modules/.bin/basalt-ui sync` (local bin, never `bunx`) to
       refresh `.claude/rules`, `.claude/skills`, the AGENTS.md managed block and `.basalt/manifest.json`,
       then `doctor`: zero hard failures. Update the `check.yml` header comment if the sync changes the
       documented bin path.
-- [ ] `make check` and the demo build green; README status line records the peer move (D1); a
+- [x] `make check` and the demo build green; README status line records the peer move (D1); a
       the built bundle loads in a headless browser with zero console errors. Compare to
       Appendix B: 0 type errors, 260 pass.
 
-## Wave 3 — Shell, routing and the command surface <!-- status: pending -->
+**Left behind:** branch `basalt-2` (worktree `../basalt-ui-obsidian-w2`, **not merged to master**, pushed to origin). D3(b) holds:
+the live checkout still builds the 1.41.0 tree, so Waves 3–5 continue on `basalt-2`; Wave 6 merges and advances the live checkout.
+Evidence: `docs/waves/evidence/basalt-2-w2.md`. Gate green on **2.8.0** (not 2.7.3): `bun run pre` 0 tsc errors, 260 pass / 1 skip;
+`doctor` 15/15; demo build green; 6 routes 0 console errors.
+
+- **D4 is answerable.** 2.8.0 `BasaltProviderProps.spotlight?: boolean` exists; the demo passes `false`. Cmd/Ctrl+K opens exactly one dialog
+  (the app's `VaultSearchSpotlight`), `/` does nothing. Wave 3 still records it across all routes and size classes.
+- `onError` became a failures-only console `telemetry` sink; `createRootRoute` kept (no `WithContext` needed); `tsconfig.base.json` kept
+  (identical options to the preset), only `apps/demo/tsconfig.json` extends the preset.
+- Bundle vs Wave 1: entry +29652 B, CSS +18246 B, vendor identical, precache 92 entries +100 KiB. Explaining the split is Wave 5's.
+- `/review` fixed React peers to `^19.3.0`; the QueryClient and `failed`-field findings were disproved (evidence file).
+- Mermaid Google Fonts `@import` appears twice on `/Showcase` (once in Wave 1): known, ledger row 68, untouched.
+- **basalt friction:** none new. Observation for the orchestrator: the plan text says 2.7.3 in several places; all pins are 2.8.0.
+
+## Wave 3 — Shell, routing and the command surface <!-- status: active -->
 
 - [ ] Decide D4 with evidence: with the provider-mounted `Spotlight`, press Cmd/Ctrl+K and `/`-style
       hotkeys on every route; record which overlay opens and whether `VaultSearchSpotlight` still
