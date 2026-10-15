@@ -58,27 +58,48 @@ separate from any `docs/waves/PLAN.md`; it does not edit, reorder or start waves
   Spotlights now compete for Cmd+K. If they do, that is a ledger row (the app's own search is a
   legitimate reason to opt out) and Wave 3 waits for a basalt minor rather than patching around it.
 
-## Wave 1 — Baseline on 1.41.0 <!-- status: active -->
+## Wave 1 — Baseline on 1.41.0 <!-- status: done -->
 
-- [ ] Pin check: both `basalt-ui` pins read 1.41.0, `bun install --frozen-lockfile` is clean, and
+- [x] Pin check: both `basalt-ui` pins read 1.41.0, `bun install --frozen-lockfile` is clean, and
       `make check` plus the demo build are green on 1.41.0 (Appendix B records the 0-error typecheck).
-- [ ] Build against a fixed scratch vault (a small fixed vault kept outside the repo, e.g. under `/tmp`) and record `apps/demo/dist` bytes: entry JS, CSS, the `dist-*` vendor
+- [x] Build against a fixed scratch vault (a small fixed vault kept outside the repo, e.g. under `/tmp`) and record `apps/demo/dist` bytes: entry JS, CSS, the `dist-*` vendor
       chunk, SW precache count and size, `vault.json` and `search-index.json` size, plus the md5
       build-id. Appendix B has the unscripted starting numbers (entry JS 667414, CSS 280277, vendor
       1590430, 92 precache entries / 4432 KiB).
-- [ ] Screenshots, light and dark, desktop (1440) and phone (390), of every route that renders basalt
+- [x] Screenshots, light and dark, desktop (1440) and phone (390), of every route that renders basalt
       UI: `/`, `/recent`, `/search`, `/tags`, `/bookmarks`, and a note route `/$` with a callout, a
       code fence, a table, a mermaid fence and an Obsidian wikilink. Also the open Cmd+K search
       overlay, the collapsed sidebar rail, the mobile More sheet, and the "Vault failed to load"
       state. Stored under `docs/waves/evidence/basalt-2-w1/` through the `/img` stack or a size-bounded
       PNG set; the evidence file lists the filenames and what each proves.
-- [ ] Runtime evidence this repo can produce: `bun test` count (261 tests, 28 files), console output of
+- [x] Runtime evidence this repo can produce: `bun test` count (261 tests, 28 files), console output of
       the served bundle (zero errors and warnings), Lighthouse score for `/` and one note route via
       `@verifier`. There is no OTel and no Kuma monitor (`AGENTS.md` § Verify & Monitor); say so rather
       than inventing one.
-- [ ] Commit `docs/waves/evidence/basalt-2-w1.md`. Do not touch any pin.
+- [x] Commit `docs/waves/evidence/basalt-2-w1.md`. Do not touch any pin.
 
-## Wave 2 — The 2.7.3 bump (atomic) <!-- status: pending -->
+**Left behind:** evidence in `docs/waves/evidence/basalt-2-w1.md` + `basalt-2-w1/` (37 PNGs). No pin touched.
+Gate on 1.41.0: `make check` green (0 tsc errors, 260 pass / 1 skip); bundle bytes match Appendix B exactly
+(entry 667414, CSS 280277, vendor 1590430, 92 precache); baseline console is clean.
+
+- **This checkout is the live brain-web checkout** (served `build-id.txt` == `apps/demo/dist/build-id.txt`).
+  `make build`/`make up` here overwrite the served `dist/`, and the LaunchAgent builds this working tree. D3(b)
+  therefore means Waves 2–5 must run in a worktree, not here, and baselines/rebuilds go to
+  `vite build --outDir /tmp/basalt-w<n>-dist`. Wave 5 reuses the Wave 1 scratch vault recipe in the evidence file.
+- Scratch vault, dist and scripts live in `/tmp` and are not durable; the evidence file describes how to
+  recreate them. Relative ages ("41w") on `home`/`recent` drift with the date; mask them in Wave 5 diffs.
+- Plan correction: the 1.41.0 phone nav has no "More" sheet (5 tabs, no overflow), so Wave 3's More-sheet step
+  has no baseline.
+- Plan target is `basalt-ui@2.8.0`; Appendix B pins read 2.7.3. Wave 2 should pin 2.8.0.
+- Baseline oddities (phone TOC trigger overlaps text, clipped phone code fence, skewed mermaid layout) are in
+  the evidence file, to be classified in Wave 5, not fixed.
+- **basalt friction:** the mermaid SVG's inline `<style>` `@import`s
+  `fonts.googleapis.com/css2?family=var(--basalt-font-sans)…` (unresolved CSS var inside a URL, blocked by ORB;
+  an external font request from a basalt-themed render). Root is possibly `beautiful-mermaid` fed
+  `--basalt-font-sans` by basalt, unconfirmed; the orchestrator files it if basalt-rooted. Verifier also
+  lacked the chrome-devtools MCP; it used `puppeteer-core`.
+
+## Wave 2 — The 2.7.3 bump (atomic) <!-- status: active -->
 
 Sized from the probe: 6 type errors in 3 files plus 3 `doctor` hard failures. 1.x and 2.x cannot share
 the demo, so this lands as one change: pins, wiring and managed layer together.
@@ -90,7 +111,7 @@ the demo, so this lands as one change: pins, wiring and managed layer together.
       `@tanstack/react-query` and `motion` to what the 2.7.3 peer table asks if a clean
       `bun install` warns. `bun install` stays warning-free.
 - [ ] `apps/demo/src/main.tsx` to the shipped `agent/templates/main.tpl` shape: `createBasaltRouter({
-      routeTree })` replaces `createRouter` + `QueryClientProvider` + `RouterProvider`;
+    routeTree })` replaces `createRouter` + `QueryClientProvider` + `RouterProvider`;
       `<BasaltProvider router={router} theme=… defaultColorScheme="dark" telemetry=…>` replaces the
       children-wrapping provider; delete `BasaltOverlays`, `lib/query-client.ts`, and the
       `@mantine/core/styles.layer.css` and `@mantine/spotlight/styles.layer.css` imports (the 2.x
@@ -122,7 +143,7 @@ the demo, so this lands as one change: pins, wiring and managed layer together.
       collapsed rail; the mobile More sheet still omits it.
 - [ ] Route transitions: `createBasaltRouter` now sets `defaultViewTransition` with direction from the
       `defineNav` order. Check that the note-route scroll restoration and the TOC rail `position:
-      sticky` (documented in `__root.tsx`) survive, and that no `<ViewTransition>` wraps `<Outlet>`.
+    sticky` (documented in `__root.tsx`) survive, and that no `<ViewTransition>` wraps `<Outlet>`.
 - [ ] `useSizeClass` consumers (`routes/index.tsx`, `vault-search-spotlight.tsx`) and the demo's
       `shell/mobile-density.css`, `shell/safe-area.css` constants (840px / 52.5em complement) against
       MIGRATING § 1.31 and § 2.0 shell rows; record any changed breakpoint.
@@ -205,40 +226,40 @@ Grep over `packages`, `apps`, `tests`, excluding `node_modules`, `.claude/worktr
 read from the installed 2.7.3 `MIGRATING.md` § 2.0.0 (Subpaths/peers, Provider and wiring, Router
 bridge, content rows) plus the probe in Appendix B; "compiles" means `tsc` accepted it on 2.7.3.
 
-| File | Subpath | Symbols | 2.x fate |
-| - | - | - | - |
-| `apps/demo/vite.config.ts` | `basalt-ui/vite` | `basaltAppPlugin`, `basaltViteConfig` | **unmapped** (no § 2.0 row); compiles, `./vite` is still exported. Behaviour (PWA, `injectRegister`) verified in Wave 2 |
-| `apps/demo/src/main.tsx` | `basalt-ui/styles.css` | side-effect CSS | kept; now `@import`s Mantine core, notifications and spotlight layers |
-| `apps/demo/src/main.tsx` | `basalt-ui` | `BasaltProvider`, `createBasaltTheme` | `BasaltProvider` props change: `children`/`onError` removed, `router` required; `createBasaltTheme` kept (default theme) |
-| `apps/demo/src/main.tsx` | `basalt-ui/commands` | `BasaltOverlays` | **deleted** (TS2305); provider mounts modals, notifications, Spotlight. `spotlight={false}` has **no 2.x equivalent** (D4) |
-| `apps/demo/src/lib/nav.tsx` | `basalt-ui/router-tanstack` | `defineNav`, `navGroup` | subpath **deleted** (TS2307); both move to `basalt-ui`; `defineNav` needs the `Register` augmentation |
-| `apps/demo/src/routes/__root.tsx` | `basalt-ui` | `BasaltShell`, `EmptyState` | kept; `BasaltShell` takes `nav={…}`; `EmptyState` props type deleted (derive), component stays |
-| `apps/demo/src/routes/__root.tsx` | `basalt-ui/router-tanstack` | `useBasaltNav`, `useNav` | subpath deleted (TS2307); `useBasaltNav` → `basalt-ui`; `useNav` **deleted** → `BasaltShell nav` |
-| `apps/demo/src/routes/index.tsx` | `basalt-ui` | `useSizeClass` | kept (shell-chrome use only, MIGRATING § 1.32) |
-| `apps/demo/src/routes/$.tsx` | `basalt-ui` | `EmptyState` | kept |
-| `apps/demo/src/lib/vault-search-spotlight.tsx` | `basalt-ui` | `useSizeClass` | kept |
-| `apps/demo/src/lib/vault-search-spotlight.tsx` | `basalt-ui/tokens` | `alpha`, `VX` | kept (same specifier on 1.41 and 2.7.3) |
-| `packages/basalt-ui-obsidian/src/render/note-view.tsx` | `basalt-ui/content` | `ArticleLayout`, `Markdown`, type `ArticleLayoutMeta` | compiles; `ArticleLayoutProps` type deleted but not used here |
-| `packages/basalt-ui-obsidian/src/render/obsidian-components.tsx` | `basalt-ui/content` | `Callout`; types `CalloutKind`, `FenceRenderer`, `FenceRenderers` | compiles; `CalloutProps` deleted, not used |
-| `packages/basalt-ui-obsidian/src/render/use-obsidian-markdown.ts` | `basalt-ui/content` | types `MarkdownComponents`, `MarkdownProps` | compiles |
-| `packages/basalt-ui-obsidian/src/render/sanitize-schema.ts` | `basalt-ui/content` | type `SanitizeSchemaExtension` | compiles |
-| `packages/basalt-ui-obsidian/src/panels/note-list.tsx` | `basalt-ui/tokens` | `VX` | kept |
-| `packages/basalt-ui-obsidian/src/panels/bookmarks-panel.tsx` | `basalt-ui/tokens` | `VX` | kept |
-| `packages/basalt-ui-obsidian/src/nav/vault-nav.tsx` | `basalt-ui/tokens` | `alpha`, `VX` | kept |
-| `packages/basalt-ui-obsidian/tests/render-sanitize-schema.test.tsx` | `basalt-ui/content` | `mergeSanitizeSchema`, type `SanitizeSchemaInput` | compiles |
-| `packages/basalt-ui-obsidian/tests/render-use-obsidian-markdown.test.tsx` | `basalt-ui/content` | `Markdown` | compiles |
+| File                                                                      | Subpath                     | Symbols                                                           | 2.x fate                                                                                                                   |
+| ------------------------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `apps/demo/vite.config.ts`                                                | `basalt-ui/vite`            | `basaltAppPlugin`, `basaltViteConfig`                             | **unmapped** (no § 2.0 row); compiles, `./vite` is still exported. Behaviour (PWA, `injectRegister`) verified in Wave 2    |
+| `apps/demo/src/main.tsx`                                                  | `basalt-ui/styles.css`      | side-effect CSS                                                   | kept; now `@import`s Mantine core, notifications and spotlight layers                                                      |
+| `apps/demo/src/main.tsx`                                                  | `basalt-ui`                 | `BasaltProvider`, `createBasaltTheme`                             | `BasaltProvider` props change: `children`/`onError` removed, `router` required; `createBasaltTheme` kept (default theme)   |
+| `apps/demo/src/main.tsx`                                                  | `basalt-ui/commands`        | `BasaltOverlays`                                                  | **deleted** (TS2305); provider mounts modals, notifications, Spotlight. `spotlight={false}` has **no 2.x equivalent** (D4) |
+| `apps/demo/src/lib/nav.tsx`                                               | `basalt-ui/router-tanstack` | `defineNav`, `navGroup`                                           | subpath **deleted** (TS2307); both move to `basalt-ui`; `defineNav` needs the `Register` augmentation                      |
+| `apps/demo/src/routes/__root.tsx`                                         | `basalt-ui`                 | `BasaltShell`, `EmptyState`                                       | kept; `BasaltShell` takes `nav={…}`; `EmptyState` props type deleted (derive), component stays                             |
+| `apps/demo/src/routes/__root.tsx`                                         | `basalt-ui/router-tanstack` | `useBasaltNav`, `useNav`                                          | subpath deleted (TS2307); `useBasaltNav` → `basalt-ui`; `useNav` **deleted** → `BasaltShell nav`                           |
+| `apps/demo/src/routes/index.tsx`                                          | `basalt-ui`                 | `useSizeClass`                                                    | kept (shell-chrome use only, MIGRATING § 1.32)                                                                             |
+| `apps/demo/src/routes/$.tsx`                                              | `basalt-ui`                 | `EmptyState`                                                      | kept                                                                                                                       |
+| `apps/demo/src/lib/vault-search-spotlight.tsx`                            | `basalt-ui`                 | `useSizeClass`                                                    | kept                                                                                                                       |
+| `apps/demo/src/lib/vault-search-spotlight.tsx`                            | `basalt-ui/tokens`          | `alpha`, `VX`                                                     | kept (same specifier on 1.41 and 2.7.3)                                                                                    |
+| `packages/basalt-ui-obsidian/src/render/note-view.tsx`                    | `basalt-ui/content`         | `ArticleLayout`, `Markdown`, type `ArticleLayoutMeta`             | compiles; `ArticleLayoutProps` type deleted but not used here                                                              |
+| `packages/basalt-ui-obsidian/src/render/obsidian-components.tsx`          | `basalt-ui/content`         | `Callout`; types `CalloutKind`, `FenceRenderer`, `FenceRenderers` | compiles; `CalloutProps` deleted, not used                                                                                 |
+| `packages/basalt-ui-obsidian/src/render/use-obsidian-markdown.ts`         | `basalt-ui/content`         | types `MarkdownComponents`, `MarkdownProps`                       | compiles                                                                                                                   |
+| `packages/basalt-ui-obsidian/src/render/sanitize-schema.ts`               | `basalt-ui/content`         | type `SanitizeSchemaExtension`                                    | compiles                                                                                                                   |
+| `packages/basalt-ui-obsidian/src/panels/note-list.tsx`                    | `basalt-ui/tokens`          | `VX`                                                              | kept                                                                                                                       |
+| `packages/basalt-ui-obsidian/src/panels/bookmarks-panel.tsx`              | `basalt-ui/tokens`          | `VX`                                                              | kept                                                                                                                       |
+| `packages/basalt-ui-obsidian/src/nav/vault-nav.tsx`                       | `basalt-ui/tokens`          | `alpha`, `VX`                                                     | kept                                                                                                                       |
+| `packages/basalt-ui-obsidian/tests/render-sanitize-schema.test.tsx`       | `basalt-ui/content`         | `mergeSanitizeSchema`, type `SanitizeSchemaInput`                 | compiles                                                                                                                   |
+| `packages/basalt-ui-obsidian/tests/render-use-obsidian-markdown.test.tsx` | `basalt-ui/content`         | `Markdown`                                                        | compiles                                                                                                                   |
 
 Non-import wiring:
 
-| Surface | 1.41.0 state | 2.7.3 fate |
-| - | - | - |
-| `apps/demo/src/lib/query-client.ts` | `new QueryClient()` handed to `QueryClientProvider` | **unmapped** row for a hand-rolled client; implied by `createBasaltRouter`'s owned client. Delete; `useVaultIndexQuery` runs under the router's client |
-| CSS layer imports in `main.tsx` | `@mantine/core/styles.layer.css`, `@mantine/spotlight/styles.layer.css`, then `basalt-ui/styles.css` | delete the two Mantine imports (doubles the bundle otherwise) |
-| `.oxlintrc.json`, `lefthook.yml`, `check.yml` | extend/exec through `packages/basalt-ui-obsidian/node_modules/basalt-ui/...` | unchanged paths; doctor `lefthook`, `oxlint-preset`, `retired-lint-rules` pass on 2.7.3 |
-| `tsconfig.base.json` | own strict set | doctor wants `extends: basalt-ui/configs/tsconfig.react-app.json` |
-| CLI use | `sync --check` in CI, `check-theme` in `lint:basalt`, `doctor` in CI | `doctor` gains `app-wiring`, `install-parity`, `tsconfig-base`; run `sync` once in Wave 2 |
-| `.claude/rules|skills`, AGENTS.md block, `.basalt/manifest.json` | written by 1.41.0 | refreshed by `sync` |
-| `DESIGN.md` | thin consumer file, empty series table | unchanged; no chart series exist |
+| Surface                                       | 1.41.0 state                                                                                         | 2.7.3 fate                                                                                                                                             |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/demo/src/lib/query-client.ts`           | `new QueryClient()` handed to `QueryClientProvider`                                                  | **unmapped** row for a hand-rolled client; implied by `createBasaltRouter`'s owned client. Delete; `useVaultIndexQuery` runs under the router's client |
+| CSS layer imports in `main.tsx`               | `@mantine/core/styles.layer.css`, `@mantine/spotlight/styles.layer.css`, then `basalt-ui/styles.css` | delete the two Mantine imports (doubles the bundle otherwise)                                                                                          |
+| `.oxlintrc.json`, `lefthook.yml`, `check.yml` | extend/exec through `packages/basalt-ui-obsidian/node_modules/basalt-ui/...`                         | unchanged paths; doctor `lefthook`, `oxlint-preset`, `retired-lint-rules` pass on 2.7.3                                                                |
+| `tsconfig.base.json`                          | own strict set                                                                                       | doctor wants `extends: basalt-ui/configs/tsconfig.react-app.json`                                                                                      |
+| CLI use                                       | `sync --check` in CI, `check-theme` in `lint:basalt`, `doctor` in CI                                 | `doctor` gains `app-wiring`, `install-parity`, `tsconfig-base`; run `sync` once in Wave 2                                                              |
+| `.claude/rules                                | skills`, AGENTS.md block, `.basalt/manifest.json`                                                    | written by 1.41.0                                                                                                                                      | refreshed by `sync` |
+| `DESIGN.md`                                   | thin consumer file, empty series table                                                               | unchanged; no chart series exist                                                                                                                       |
 
 Unmapped symbols (each a candidate friction row): `basaltAppPlugin` / `basaltViteConfig` (no § 2.0
 row), the hand-rolled `QueryClient` + `QueryClientProvider` pattern, `BasaltOverlays spotlight={false}`
@@ -250,13 +271,13 @@ want a console sink without a telemetry backend.
 Local branch `tmp/basalt-2.7.3-probe` off `57023d8`, never pushed, deleted. Exact pins to `2.7.3`,
 library peer to `^2.7.3`, `bun install`, `timeout 600 bun run typecheck`.
 
-| Run | Result |
-| - | - |
-| Baseline on 1.41.0 (after a demo build wrote `routeTree.gen.ts`) | `obsidian-vault-core`, `basalt-ui-obsidian`, `@basalt-ui-obsidian/demo` typecheck: **0 errors** |
-| Typecheck on 2.7.3 | **6 errors** — `obsidian-vault-core` 0, `basalt-ui-obsidian` 0, demo 6 |
-| `bun test` on 2.7.3 | 260 pass, 1 skip, 0 fail (28 files) |
-| `bun run lint:basalt` on 2.7.3 | exit 0; `oxlint` warnings only (`react/only-export-components`, two `exhaustive-effect-dependencies`, one `no-console`), theme guard "no off-palette colors" |
-| `bun run fmt:check` on 2.7.3 | clean |
+| Run                                                              | Result                                                                                                                                                       |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Baseline on 1.41.0 (after a demo build wrote `routeTree.gen.ts`) | `obsidian-vault-core`, `basalt-ui-obsidian`, `@basalt-ui-obsidian/demo` typecheck: **0 errors**                                                              |
+| Typecheck on 2.7.3                                               | **6 errors** — `obsidian-vault-core` 0, `basalt-ui-obsidian` 0, demo 6                                                                                       |
+| `bun test` on 2.7.3                                              | 260 pass, 1 skip, 0 fail (28 files)                                                                                                                          |
+| `bun run lint:basalt` on 2.7.3                                   | exit 0; `oxlint` warnings only (`react/only-export-components`, two `exhaustive-effect-dependencies`, one `no-console`), theme guard "no off-palette colors" |
+| `bun run fmt:check` on 2.7.3                                     | clean                                                                                                                                                        |
 
 Errors per file: `src/main.tsx` 4, `src/routes/__root.tsx` 1, `src/lib/nav.tsx` 1. Codes: TS2307 ×2,
 TS7006 ×2, TS2322 ×1, TS2305 ×1. Representative:
