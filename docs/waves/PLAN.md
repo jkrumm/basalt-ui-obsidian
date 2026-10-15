@@ -288,18 +288,33 @@ entries, 0 stale dev chunks, 0 Google Fonts requests, 0 console errors. 2.8.1 ch
   obvious path.
 - Plan text still says 2.7.3 in places; the pin is 2.8.1.
 
-## Wave 7 — Fresh-agent DX trial <!-- status: active -->
+## Wave 7 — Fresh-agent DX trial <!-- status: done -->
 
-- [ ] Spawn a fresh agent with no migration context, only `AGENTS.md`, the shipped rules and skills.
+- [x] Spawn a fresh agent with no migration context, only `AGENTS.md`, the shipped rules and skills.
       Brief: add a `/graph` route to the demo that lists a note's outgoing links with a `Callout`-styled
       header and a note preview rendered through `Markdown`, using the shell, the `defineNav` entry,
       `useSizeClass` and `VX` tokens (the surfaces this repo uses).
-- [ ] Have it record every wrong turn that was basalt-rooted (missing `llms.txt` prop shapes, rule
+- [x] Have it record every wrong turn that was basalt-rooted (missing `llms.txt` prop shapes, rule
       silence, a `.d.ts` that disagrees with `MIGRATING.md`, a doctor message it could not act on).
-- [ ] Each wrong turn becomes a row in `argo-friction.md` (`basalt-ui-obsidian W7 DX trial`) with the
+- [x] Each wrong turn becomes a row in `argo-friction.md` (`basalt-ui-obsidian W7 DX trial`) with the
       workaround it did NOT take; fix repo-owned ones (stale comments, AGENTS.md gaps) in-repo.
-- [ ] Evidence `basalt-2-w7.md`: the trial transcript summary and the row list. Remove the trial route
+- [x] Evidence `basalt-2-w7.md`: the trial transcript summary and the row list. Remove the trial route
       unless the owner wants it.
+
+**Left behind:** evidence in `docs/waves/evidence/basalt-2-w7.md`. One headless fresh agent (neutral brief, isolated worktree
+`trial/graph-route`) built `/graph` in 26 turns; `make check` green on its result (261 pass). The trial route, worktree and branch
+are deleted; `basalt-2` worktree and branch are removed locally and on origin. No `argo-friction.md` rows were written (basalt-ui
+is not edited from this repo); the orchestrator files the list below.
+
+- **Repo-owned, fixed (`310d3cc`):** AGENTS.md now states the fresh-worktree prerequisite (`bun run build` plus a demo build before
+  `typecheck`; reproduced as `TS2307` on `obsidian-vault-core`) and the `llms.txt` path and its gaps.
+- **Not fixed, outside the ask:** the helper `NoteView` uses to hide a duplicate leading title is not exported from
+  `basalt-ui-obsidian`.
+- **Not tested:** the trial agent did not view the page in a browser; it inherited the owner's global config; it never ran
+  `doctor` or a `basalt-*` skill.
+- **basalt friction:** (a) `llms.txt` names `CalloutKind` and nav `mobile` without the union members. (b) its `VX` signature is
+  truncated with `…`. (c) `CONTAINER_KEYS` values are absent although the breakpoint rule needs them. (d) unconfirmed: container
+  `SimpleGrid` has no unequal-column option. Also from earlier waves, still unfiled by this wave: Wave 6 items (1)–(3).
 
 **Blast radius:** 23 `basalt-ui` import lines in 16 files (11 in 7 demo files, 12 in 9 library
 files incl. 2 tests); ~12 files touched in the bump (3 `package.json`, `bun.lock`, `main.tsx`,
