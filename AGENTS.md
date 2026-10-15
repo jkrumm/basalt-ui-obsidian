@@ -17,6 +17,18 @@ overrides) lives in `CLAUDE.md`, because `basalt-ui sync` owns it there and CI g
 the first failure. Not covered: `make build` (writes `apps/demo/dist/`) and `make verify` (asserts
 the served bundle); neither is validation.
 
+**Fresh checkout or worktree:** `make check` fails `typecheck` (`TS2307` on `obsidian-vault-core`)
+until you run `bun install`, then `bun run build` (emits the two packages' `.d.ts`) and a demo build
+(`VAULT_DIR=<scratch vault> bun --filter @basalt-ui-obsidian/demo build`, which writes the gitignored
+`apps/demo/src/routeTree.gen.ts`). `.github/workflows/check.yml` does the same. The demo build
+also writes `apps/demo/dist/` — in a worktree that is harmless; in the live checkout use
+`vite build --outDir` to a scratch dir.
+
+**basalt-ui reference:** the installed `llms.txt` is `packages/basalt-ui-obsidian/node_modules/basalt-ui/llms.txt`.
+It truncates long signatures (the `VX` token list ends in `…`) and names types without their members
+(`CalloutKind`, `CONTAINER_KEYS` values); for those read the `.d.ts` under `dist/` beside it, or the `VX.*`
+names already used in `packages/basalt-ui-obsidian/src`.
+
 ## Deploy
 
 `make deploy` is an alias of `make up`: build the workspace + demo site, recreate the nginx
