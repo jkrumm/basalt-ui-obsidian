@@ -62,7 +62,7 @@ rebuilding the previous revision and running `make refresh`.
 - `nginx.conf` serves `index.html`, `vault.json`, `search-index.json` and `sw.js` as `no-cache`
   on purpose; only hashed `/assets/` are immutable. Don't "optimize" those away.
 
-<!-- basalt:begin 2.9.0 -->
+<!-- basalt:begin 2.11.1 -->
 
 ## basalt-ui (managed — do not hand-edit)
 
