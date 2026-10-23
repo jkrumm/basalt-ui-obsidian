@@ -4,3 +4,5 @@ dist/
 *.log
 .turbo/
 coverage/
+.design-parity/
+.basalt/shots/
