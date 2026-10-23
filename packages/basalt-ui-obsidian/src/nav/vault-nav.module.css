@@ -98,7 +98,7 @@
   align-items: center;
   gap: 6px;
   min-height: 24px;
-  padding: 3px 8px;
+  padding: 3px var(--mantine-spacing-xs);
   border-radius: var(--vx-radius-tight);
   cursor: pointer;
   background-color: transparent;
