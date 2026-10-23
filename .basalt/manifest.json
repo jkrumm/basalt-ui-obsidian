@@ -1,28 +1,36 @@
 {
   "version": 1,
   "files": {
-    ".claude/rules/basalt-mantine.md": "850dccc661ee4b6b728b2213838ecc6f48a09b8151cfcb4b87f9b588b7ebee72",
-    ".claude/rules/basalt-charts.md": "9a2ba493a9aa57855713485ef35464350854c2beebe5dd83bce5400d0da7e13c",
-    ".claude/rules/basalt-tokens.md": "681cda3782872f27516938cbe3ab27d8d549948dbdd80539daade14a5dca60f0",
-    ".claude/rules/basalt-state.md": "1f62f9f628c801368b851d7105095e5b6a271e6e52fc75e62e54da1f2b4ec6ab",
-    ".claude/skills/basalt-app/SKILL.md": "159ff7db2ac932d06ce35d88c43a3b6ff46ec596cdf5f461d98b98595a3e323f",
-    ".claude/skills/basalt-design/SKILL.md": "9affe0419e00cc4c9744d7e5d82b00c6d051d995b74d27290bb226b4fe4b33cc",
+    ".claude/rules/basalt-mantine.md": "5429d8176cfa019f29f6db57afc43c186990494cb87bb5895b394a4480260a09",
+    ".claude/rules/basalt-charts.md": "bd12165bfe93c3dacb2a57f92abca93798ae73a1ba0e6dfcb15b57b067d40466",
+    ".claude/rules/basalt-tokens.md": "33171bbbbb9cf7fb28c5f1b7f772b5cd8ae50f7cd98aeb523aaba2323b78eb79",
+    ".claude/rules/basalt-state.md": "6149a4b482a341d3bcd85be75254220aa51ce921ca643636559a3fdeb73c8bb3",
+    ".claude/skills/basalt-app/SKILL.md": "d526d5ad3b95a91a1271e4f96d978ad9569b8c24b505014a2d6a5d6087e59f02",
+    ".claude/skills/basalt-design/SKILL.md": "ae4c3cd41a403ca89f7125b32dfa92c106f378a2824543100cf68b63b469164d",
     ".claude/skills/basalt-charts/SKILL.md": "f723aa1ecae41bdfcd4179ee82a5d87ad3de302b613a15a5b0854cc6c5dad38c",
     "DESIGN.md": "4986c5926c8b565268b1dc17cf4070a4ad368d1a3796cb69c7e136a2ef565c6e",
     ".oxfmtrc.json": "45c6ab68a6bc0e5dd6bb8b4106c71fe4af6f3e68309f112c0df382bce57e8cdb",
     "lefthook.yml": "38174437df9d4f0c1af6fc3ff7b0a96e820f9b88758ffd4dba29c5ed738681c0",
     ".github/workflows/check.yml": "897aa9276bf0f96fc45f86947346312a4bda67f8bdd5e6cef8d530a3a934605c",
     ".oxlintrc.json": "e7237e982c1d2528ecc4ab5ae7bc6737591a60a66ad28df8ddf5c0ffadeea803",
-    ".claude/rules/basalt-batteries.md": "272737ef85af6a5393c52ad7c2897c27817a08e2f8a8ed286add7334e9fa9fdc",
-    ".claude/rules/basalt-controls.md": "1db7beecfb3df28c678c6fcc0c59f3a6c6772b8e90a76f226ca85c8e1c42c39b",
-    "AGENTS.md": "68c22d59aa05dd64450484bd9466c0081c8f4f1c4098b38e1d2b94a69fad776a"
+    ".claude/rules/basalt-batteries.md": "f800d2a11e569746404af77d1f89f6fc9bd2a89e423d0b4fa7f40f4a30ab3e01",
+    ".claude/rules/basalt-controls.md": "a7ddc5756963be675fdb06f29594ecfff42dbad7d20fc5f1a571c1535cdfc8b6",
+    "AGENTS.md": "ecbc740c0abc73f62230d2a0a242c2e98b100b7c634bacea9b6f3e400c73d133",
+    ".claude/skills/basalt-design/references/anti-defaults.md": "d7b30db98d56a31c372cffcf3f5823c0d85a1326fbfaf72729d6cb42d5583b63",
+    ".claude/skills/basalt-design/references/catalogue.md": "c483a8d52c47ea5baa72306f5c38658cbdb71fe706c094d8e9df21ddfa6ff276",
+    ".claude/skills/basalt-design/references/concept.md": "436bec3281725f2ebe3193837a375111b544df69aab1f5ac0efa35fdd21b3269",
+    ".claude/skills/basalt-design/references/encoding-rules.md": "40a4c01c20329d1c907b4caae36379afe7798009f5b9656104e647b6c59f3163",
+    ".claude/skills/basalt-design/references/recipes.md": "7dff910d2c586da85f68bc6ab80a678450ba73438853005146e92f822291c5f3",
+    ".claude/skills/basalt-design/references/stat-tile.md": "799fd2da858106621efdc366b52b7251e6d476dc833605e712ff18bc89f7f18b",
+    ".claude/skills/basalt-design/references/states.md": "f417ebb78ca7e0cd212d50bf1293a4568be0ddbe6bb040fa682d5d56a426d9ce",
+    ".claude/agents/basalt-design-reviewer.md": "baed49bccb5127d4fa7d8f42059a352bfc40d220a74a1d25a5f1aa86c2ddd5fa"
   },
-  "basaltVersion": "2.11.1",
+  "basaltVersion": "2.28.0",
   "spacingScale": {
-    "xs": 11,
-    "sm": 13,
-    "md": 18,
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
     "lg": 20,
-    "xl": 26
+    "xl": 24
   }
 }
