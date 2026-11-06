@@ -1,4 +1,4 @@
-.PHONY: help build up down logs logs-follow rebuild refresh check deploy verify
+.PHONY: help build up down logs logs-follow rebuild refresh check deploy verify version
 .DEFAULT_GOAL := help
 
 DEMO_DIR := apps/demo
@@ -20,6 +20,11 @@ build: ## Build the workspace packages + the demo static site against VAULT_DIR 
 	@(cat $(DIST)/vault.json $(DIST)/assets/*.js $(DIST)/assets/*.css | md5 2>/dev/null \
 		|| cat $(DIST)/vault.json $(DIST)/assets/*.js $(DIST)/assets/*.css | md5sum | cut -d' ' -f1) \
 		> $(DIST)/build-id.txt
+	@# commit.txt: the git commit this dist/ was built from. `version` reads it
+	@# back from the running container — not from disk — so it reports what is
+	@# actually served. Not part of the build-id (a new commit with identical
+	@# output is the same bundle).
+	@git rev-parse HEAD > $(DIST)/commit.txt
 	@VAULT_SIZE=$$(wc -c < $(DIST)/vault.json | tr -d ' '); \
 	SEARCH_SIZE=$$(wc -c < $(DIST)/search-index.json | tr -d ' '); \
 	NOTES=$$(bun -e "console.log(JSON.parse(require('fs').readFileSync('$(DIST)/vault.json','utf8')).notes.length)"); \
@@ -72,6 +77,16 @@ verify: ## Probe the served site on the loopback URL and assert the served bundl
 		echo "    served:       $$CONT"; \
 		exit 1; \
 	fi
+
+version: ## Print the commit sha the served bundle was built from (one line). READ-ONLY; non-zero when the site does not answer or serves no commit.txt.
+	@# nginx falls back to index.html (SPA) for a missing file with a 200, so the
+	@# body is only a commit if it is exactly a 40-hex sha.
+	@SHA=$$(curl -fsS --max-time 5 http://127.0.0.1:7733/commit.txt 2>/dev/null | head -c 64 | tr -d '[:space:]'); \
+	if ! printf '%s' "$$SHA" | grep -Eq '^[0-9a-f]{40}$$'; then \
+		echo "✗ no commit served at http://127.0.0.1:7733/commit.txt — container down or dist/ built before commit.txt existed (make refresh)" >&2; \
+		exit 1; \
+	fi; \
+	echo "$$SHA"
 
 down: ## Stop the stack
 	docker compose down

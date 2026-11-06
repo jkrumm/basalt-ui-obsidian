@@ -44,6 +44,11 @@ rebuilding the previous revision and running `make refresh`.
 - **Health URL:** `http://127.0.0.1:7733/` (loopback only; Caddy fronts it externally). `make verify`
   probes it and compares the served `http://127.0.0.1:7733/build-id.txt` against the working tree's
   `apps/demo/dist/build-id.txt` — an md5 of `vault.json` plus every emitted JS/CSS asset.
+- **Deployed version:** `make version` prints the commit sha the served bundle was built from, read
+  from `http://127.0.0.1:7733/commit.txt` (`make build` writes `dist/commit.txt` from `git rev-parse HEAD`).
+  It exits non-zero unless the body is a 40-hex sha — nginx answers a missing file with the SPA
+  `index.html` and a 200. `project.yaml` (`deploy.mode make`, target `mini`, `verify: make verify`)
+  is how the factory ships this repo.
 - **Kuma monitor:** `none` — `~/SourceRoot/homelab/uptime-kuma/monitors.yaml` has no brain-web
   monitor. The nearest entries are `Brain Sync - Push` and `Brain Backup - Push`, which watch the
   vault's git sync/backup, not this reader.
