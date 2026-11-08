@@ -3,7 +3,7 @@
 > Managed by basalt-ui — run `basalt-ui doctor` for the version. This is a **thin** instantiation — it records this
 > app's **deltas only** on top of the shipped `basalt-*` rules. The universal law (earned color,
 > neutral-by-default, three-tier `--vx-*` tokens, theme-is-data, the chart primitive contract, the
-> elevation/density/shape doctrine) lives in those rules and the `/basalt:design` skill, and is
+> elevation/density/shape doctrine) lives in those rules and the `/basalt-design` skill, and is
 > **not** repeated here. Touch this file only to confirm identity, register the app's series, or
 > record a genuine deviation.
 
@@ -13,7 +13,7 @@ This file's deltas win, then the shipped rules, then any skill:
 
 1. **This file** (`basalt-ui-obsidian-monorepo` DESIGN.md) — app-specific deltas. Highest authority.
 2. **`basalt-*` rules** (`.claude/rules/basalt-*.md`) — the shipped law and its enforcement.
-3. **Skills** (`/basalt:design`, `/basalt:charts`, `/frontend-design`, …) — generic method, lowest.
+3. **Skills** (`/basalt-design`, `/basalt-charts`, `/frontend-design`, …) — generic method, lowest.
 
 A skill never overrides this file or the `basalt-*` rules. When a skill's instinct collides with the
 law, the law wins.
