@@ -1,4 +1,4 @@
-.PHONY: help build up down logs logs-follow rebuild refresh check deploy verify version
+.PHONY: help build up down logs logs-follow rebuild refresh typegen check deploy verify version
 .DEFAULT_GOAL := help
 
 DEMO_DIR := apps/demo
@@ -32,7 +32,14 @@ build: ## Build the workspace packages + the demo static site against VAULT_DIR 
 	echo "  search-index.json $${SEARCH_SIZE} bytes"; \
 	echo "  notes              $${NOTES}"
 
-check: ## Run all local validation — fmt check + lint + typecheck + tests (bun run pre). Non-zero on failure; no side effects (no container, no vault writes).
+typegen: ## Emit the gitignored artifacts typecheck needs: the two packages' .d.ts and the demo's routeTree.gen.ts. Scratch vault + scratch outDir, so the live apps/demo/dist is untouched.
+	@[ -d node_modules ] || bun install --frozen-lockfile
+	bun run build
+	@tmp=$$(mktemp -d) && trap 'rm -rf "$$tmp"' EXIT && \
+	mkdir "$$tmp/vault" && printf '# Typegen\n\nA note.\n' > "$$tmp/vault/note.md" && \
+	cd $(DEMO_DIR) && VAULT_DIR="$$tmp/vault" bun run build --outDir "$$tmp/dist" --emptyOutDir
+
+check: typegen ## Run all local validation — typegen, then fmt check + lint + typecheck + tests (bun run pre). Non-zero on failure; writes only gitignored build artifacts (no container, no vault writes, live dist untouched).
 	bun run pre
 
 up: ## Build → recreate the container → verify it answers and serves the fresh bundle → print the URL and exit. THE entrypoint; safe to re-run any time.

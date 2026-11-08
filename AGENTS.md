@@ -11,18 +11,18 @@ overrides) lives in `CLAUDE.md`, because `basalt-ui sync` owns it there and CI g
 
 ## Validate
 
-`make check` runs `bun run pre`: `fmt:check` (oxfmt), `lint:basalt` (`oxlint .` plus
-`basalt-ui check-theme` from the local bin), `typecheck` (`tsc --noEmit` per workspace) and
-`test` (`bun test`). It is side-effect free — no container, no vault write — and exits non-zero on
-the first failure. Not covered: `make build` (writes `apps/demo/dist/`) and `make verify` (asserts
-the served bundle); neither is validation.
+`make check` runs `make typegen`, then `bun run pre`: `fmt:check` (oxfmt), `lint:basalt` (`oxlint .`
+plus `basalt-ui check-theme` from the local bin), `typecheck` (`tsc --noEmit` per workspace) and
+`test` (`bun test`). It starts no container and writes no vault, and exits non-zero on the first
+failure. Not covered: `make build` (writes `apps/demo/dist/`) and `make verify` (asserts the served
+bundle); neither is validation.
 
-**Fresh checkout or worktree:** `make check` fails `typecheck` (`TS2307` on `obsidian-vault-core`)
-until you run `bun install`, then `bun run build` (emits the two packages' `.d.ts`) and a demo build
-(`VAULT_DIR=<scratch vault> bun --filter @basalt-ui-obsidian/demo build`, which writes the gitignored
-`apps/demo/src/routeTree.gen.ts`). `.github/workflows/check.yml` does the same. The demo build
-also writes `apps/demo/dist/` — in a worktree that is harmless; in the live checkout use
-`vite build --outDir` to a scratch dir.
+**`make typegen`** emits the gitignored artifacts `typecheck` needs — the two packages' `.d.ts`
+(`bun run build`) and the demo's `src/routeTree.gen.ts` (a demo build against a throwaway one-note
+vault, `--outDir` in a temp dir, so the live `apps/demo/dist/` is untouched). It runs `bun install`
+first when `node_modules` is missing, so `make check` is green from a fresh checkout or worktree
+with no manual steps. Without it `typecheck` reports `TS2307` on `obsidian-vault-core` /
+`basalt-ui-obsidian` and `TS2345` on route paths. `.github/workflows/check.yml` does the same inline.
 
 **basalt-ui reference:** the installed `llms.txt` is `packages/basalt-ui-obsidian/node_modules/basalt-ui/llms.txt`.
 It truncates long signatures (the `VX` token list ends in `…`) and names types without their members
