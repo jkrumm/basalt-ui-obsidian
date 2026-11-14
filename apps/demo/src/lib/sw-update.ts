@@ -16,7 +16,7 @@
  *
  * - a periodic `update()` — the browser only checks for a new `sw.js` at registration and roughly
  *   daily after that, so a tab left open (or a PWA resumed from background) never looks. `sw.js` is
- *   served `no-cache` (`nginx.conf`), so each check is one conditional request that 304s when
+ *   served `no-cache` (the :7733 block of dotfiles `config/Caddyfile`), so each check is one conditional request that 304s when
  *   nothing shipped.
  * - a `controllerchange` reload — the half `autoUpdate` leaves out. When the new worker claims the
  *   page, reload once so the document and its assets come from the new precache.

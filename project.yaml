@@ -2,7 +2,7 @@
 apiVersion: factory/v2
 name: basalt-ui-obsidian
 deploy:
-  mode: make # `make deploy` builds the checkout on the mini and recreates the nginx container; `make verify` proves it serves the build
+  mode: make # `make deploy` builds the checkout on the mini; Caddy serves dist/ live and `make verify` proves it serves the build
   targets:
     - { name: mini, host: mini, verify: make verify }
   hold: 5m

@@ -13,7 +13,7 @@ overrides) lives in `CLAUDE.md`, because `basalt-ui sync` owns it there and CI g
 
 `make check` runs `make typegen`, then `bun run pre`: `fmt:check` (oxfmt), `lint:basalt` (`oxlint .`
 plus `basalt-ui check-theme` from the local bin), `typecheck` (`tsc --noEmit` per workspace) and
-`test` (`bun test`). It starts no container and writes no vault, and exits non-zero on the first
+`test` (`bun test`). It writes no vault, and exits non-zero on the first
 failure. Not covered: `make build` (writes `apps/demo/dist/`) and `make verify` (asserts the served
 bundle); neither is validation.
 
@@ -31,13 +31,13 @@ names already used in `packages/basalt-ui-obsidian/src`.
 
 ## Deploy
 
-`make deploy` is an alias of `make up`: build the workspace + demo site, recreate the nginx
-container (`--force-recreate`), then `make verify` before printing the URL. This is the deploy
-mechanism on the mini. `make refresh` is the content-only path — it rebuilds `apps/demo/dist`
-from `VAULT_DIR` with no container churn (nginx serves the read-only bind mount live); the
-`com.jkrumm.brain-web-refresh` LaunchAgent runs it every 5 minutes when the vault's git HEAD moves.
-There is no rollback step: the bind mount serves whatever `dist/` holds, so reverting means
-rebuilding the previous revision and running `make refresh`.
+`make deploy` is an alias of `make up`: build the workspace + demo site, then `make verify` before
+printing the URL. This is the deploy mechanism on the mini. There is no container: Caddy's host-less
+`:7733` block (dotfiles `config/Caddyfile`) serves `apps/demo/dist` with `file_server`, reading it off
+disk per request, so a build is live on the next request and nothing restarts. `make refresh` is the
+content-only path — it rebuilds `apps/demo/dist` from `VAULT_DIR`; the `com.jkrumm.brain-web-refresh`
+LaunchAgent runs it every 5 minutes when the vault's git HEAD moves. There is no rollback step:
+reverting means rebuilding the previous revision and running `make refresh`.
 
 ## Verify & Monitor
 
@@ -46,7 +46,7 @@ rebuilding the previous revision and running `make refresh`.
   `apps/demo/dist/build-id.txt` — an md5 of `vault.json` plus every emitted JS/CSS asset.
 - **Deployed version:** `make version` prints the commit sha the served bundle was built from, read
   from `http://127.0.0.1:7733/commit.txt` (`make build` writes `dist/commit.txt` from `git rev-parse HEAD`).
-  It exits non-zero unless the body is a 40-hex sha — nginx answers a missing file with the SPA
+  It exits non-zero unless the body is a 40-hex sha — the door answers a missing file with the SPA
   `index.html` and a 200. `project.yaml` (`deploy.mode make`, target `mini`, `verify: make verify`)
   is how the factory ships this repo.
 - **Kuma monitor:** `none` — `~/SourceRoot/homelab/uptime-kuma/monitors.yaml` has no brain-web
@@ -57,15 +57,15 @@ rebuilding the previous revision and running `make refresh`.
 
 ## Gotchas
 
-- **Never raw `docker compose`** — go through `make up` / `make refresh` (docker-makefile rule).
-  `make logs` is the bounded read (`--tail=200`, exits); `make logs-follow` is the tailer.
-- The `dist/` **bind mount**, not an image `COPY`, is what makes `make refresh` container-less.
-  Baking the vault into the image would force an image rebuild on every content pull — don't.
-- `make verify`'s `MISMATCH` means the container is reading a different `dist/` (stale mount, wrong
-  cwd), not staleness to rebuild past. `SKIPPED` means one side could not be read (e.g. no
+- **No container, no `docker-compose.yml`, no `nginx.conf`** — retired 2026-11-14 when Caddy took
+  over `:7733`. Don't reintroduce one: it would fight Caddy for the port. Door logs are Caddy's,
+  not this repo's.
+- `make verify`'s `MISMATCH` means the door is serving a different `dist/` than this tree's (wrong
+  cwd or checkout), not staleness to rebuild past. `SKIPPED` means one side could not be read (e.g. no
   `build-id.txt` yet) — it is not a pass; don't treat it as one.
-- `nginx.conf` serves `index.html`, `vault.json`, `search-index.json` and `sw.js` as `no-cache`
-  on purpose; only hashed `/assets/` are immutable. Don't "optimize" those away.
+- The cache policy lives in the `:7733` block of dotfiles `config/Caddyfile`: `/`, `index.html`,
+  `vault.json`, `search-index.json` and `sw.js` are `no-cache` on purpose (rewritten in place, or the
+  PWA never sees an update); only hashed `/assets/` are immutable. Change it there, not here.
 
 <!-- basalt:begin 2.28.0 -->
 

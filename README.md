@@ -58,29 +58,24 @@ OBSIDIAN_VAULT_FIXTURE=/path/to/vault bun test
 ## Hosting
 
 `apps/demo` runs as `brain-web`, always-on on the Mac mini — a static site,
-not a dev server. nginx serves `apps/demo/dist` from a read-only bind mount
-(`docker-compose.yml`), Caddy fronts it at `brain.test` locally and
-`https://brain.mini.jkrumm.com` over the tailnet, and Colima's supervised boot
-agent plus `restart: unless-stopped` are the whole uptime story — no
-LaunchAgent watches the container itself.
+not a dev server. Caddy serves `apps/demo/dist` with `file_server` on a loopback
+`:7733` listener (the `:7733` block of dotfiles `config/Caddyfile`, which also owns the
+cache policy) and fronts it at `brain.test` locally and `https://brain.mini.jkrumm.com`
+over the tailnet. No container or VM sits in between; Caddy is the whole uptime story.
 
 ```bash
-make up   # build → recreate the container → assert the served bundle matches → http://127.0.0.1:7733
+make up   # build → assert the served bundle matches → http://127.0.0.1:7733
 ```
 
 Two refresh paths, because code and content change on different clocks. A
-code change goes through `make up` — full rebuild, `--force-recreate`. Vault
+code change goes through `make up` — full rebuild, then verify. Vault
 content changes every few minutes (`brain-sync`'s 300s pull loop keeps
 `~/SourceRoot/brain` current) and only needs `make refresh`: a plain
-`dist/` rebuild, no container restart, live on the next request because
-nginx reads the bind mount fresh every time. A LaunchAgent
+`dist/` rebuild, live on the next request because Caddy reads `dist/` off
+disk per request. A LaunchAgent
 (`dotfiles/brain-web/`) makes that automatic — it polls the vault's git HEAD
 every 5 minutes and calls `make refresh` only when it moved, so a quiet vault
 costs one `git rev-parse` and nothing else.
-
-Bind-mounted, not baked into the image, is the reason `make refresh` never
-touches Docker: baking the vault in would mean rebuilding the image on every
-content pull, for a corpus that changes far more often than the code does.
 
 ## License
 
