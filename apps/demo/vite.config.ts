@@ -58,10 +58,12 @@ export default mergeConfig(
             // revalidation, no IndexedDB — not worth building for a corpus this size.
             globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,json,webmanifest}'],
             // `VaultBundle` (vault.json) carries every note three times over (once in `notes[]`,
-            // once each in the `byPath`/`bySlug` record views over the same objects) — ~750 KB of
-            // source markdown becomes a few MB of JSON. Workbox's 2 MiB default rejects that file
-            // from the precache outright, so raise the ceiling well past the vault's current size.
-            maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+            // once each in the `byPath`/`bySlug` record views over the same objects), so the JSON is
+            // several times the size of the source markdown — vault.json is ~8.3 MiB today and grows
+            // with the vault. Workbox's 2 MiB default rejects that file from the precache outright,
+            // and an over-ceiling file fails the build (vite-plugin-pwa throws in closeBundle), so
+            // keep the ceiling far past the vault's current size.
+            maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
             // One runtime-caching rule, scoped narrowly to the image CDN — see
             // `vite-plugins/image-runtime-cache.ts` for why precache alone (globPatterns above)
             // can't reach these (they're runtime <img> fetches against a separate origin, not build
