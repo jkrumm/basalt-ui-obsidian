@@ -1,4 +1,4 @@
-# How the factory ships this project (software-factory docs/design.md §9).
+# How the factory ships this project (software-factory docs/project.md).
 apiVersion: factory/v2
 name: basalt-ui-obsidian
 deploy:
@@ -7,7 +7,8 @@ deploy:
     - { name: mini, host: mini, verify: make verify }
   hold: 5m
 ship:
-  - { paths: ["**"], via: push }
+  - { via: push }
+# One lead: `make deploy` rebuilds the single apps/demo/dist that Caddy serves on :7733, so two deploys would overwrite each other and `make verify` could not tell which build is live.
 leads: 1
 signals:
   github:
