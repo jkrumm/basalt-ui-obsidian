@@ -42,7 +42,7 @@ type RuntimeCachingEntry = {
 }
 
 /** This project's own image CDN — the default `origins` value for `imageRuntimeCaching`. */
-export const DEFAULT_IMAGE_ORIGINS = ['https://img.jkrumm.com']
+const DEFAULT_IMAGE_ORIGINS = ['https://img.jkrumm.com']
 
 /** One year: content-addressed URLs never change for a given path, so staleness isn't a concern —
  * this is purely a storage-lifetime cap, not a freshness one. */
