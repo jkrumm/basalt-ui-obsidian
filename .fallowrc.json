@@ -1,0 +1,5 @@
+{
+  "entry": [
+    "tests/setup/dom.ts"
+  ]
+}
