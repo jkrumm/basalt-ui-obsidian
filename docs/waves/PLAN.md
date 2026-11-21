@@ -6,6 +6,8 @@ is wired on `BasaltProvider` + `createBasaltRouter`, the managed layer is synced
 basalt exists anywhere in this repo. Proven against a recorded 1.41.0 baseline with screenshots and
 bundle numbers, then live on brain-web.
 
+**Current pin:** `basalt-ui@2.28.0` (`apps/demo/package.json`, `packages/basalt-ui-obsidian/package.json`, `.basalt/manifest.json`). The 2.7.3 in the header and Goal is the plan's original target, not the live version.
+
 **Gate (every wave):** `make check` green (`AGENTS.md` § Validate: `fmt:check`, `oxlint .` +
 `basalt-ui check-theme`, `tsc --noEmit` per workspace, `bun test`) plus a demo build
 (`VAULT_DIR=<scratch vault> bun --filter @basalt-ui-obsidian/demo build`; a fresh checkout has no
@@ -269,7 +271,7 @@ build green (92 precache entries). `/review` of the Waves 2–5 diff: its one bl
       commit, and confirm the served build-id still equals a 2.x build. If verify fails, the next PR is
       the fix; rollback is rebuilding the previous revision and `make refresh` (`AGENTS.md` § Deploy).
 
-**Left behind:** basalt-ui bumped 2.8.0 → 2.8.1 (exact, both `package.json`, `bun.lock`, `basalt-ui sync` refreshed
+**Left behind (Wave 6 snapshot; the pin is now 2.28.0):** basalt-ui bumped 2.8.0 → 2.8.1 (exact, both `package.json`, `bun.lock`, `basalt-ui sync` refreshed
 AGENTS.md block + `.basalt/manifest.json`); `make check` green (261 pass / 1 skip), demo build precache 84 entries with no
 `dev-dock`/`theme-lab`. `basalt-2` fast-forwarded into `master` and pushed (master convention: direct, not PR-required); live
 checkout advanced; `make deploy` green. Live build-id `7c5010f8e4e21dd45ee28be323a17531` equals `apps/demo/dist/build-id.txt`; a manual
@@ -286,7 +288,7 @@ entries, 0 stale dev chunks, 0 Google Fonts requests, 0 console errors. 2.8.1 ch
   `/wiki/weatherorb/architecture-2026-09`. (3) `basalt-ui sync` run from `apps/demo` refuses without `BASALT_CWD`; there is no
   root-level `node_modules/.bin/basalt-ui` in this workspace layout, so the AGENTS.md "run the local bin" line has no
   obvious path.
-- Plan text still says 2.7.3 in places; the pin is 2.8.1.
+- Plan text still says 2.7.3 in places; the pin was 2.8.1 at Wave 6 and is 2.28.0 now (`apps/demo/package.json`, `packages/basalt-ui-obsidian/package.json`, `.basalt/manifest.json`).
 
 ## Wave 7 — Fresh-agent DX trial <!-- status: done -->
 
